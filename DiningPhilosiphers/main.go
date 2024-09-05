@@ -3,87 +3,81 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
+	"time"
+)
+
+var (
+	rounds = 1000
 )
 
 func main() {
-	//minMaxThinking := []int{2, 3, 4, 5, 6, 7}
-	forkChannel := make(chan [5]int)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	fork0 := make(chan bool, 1)
+	fork1 := make(chan bool, 1)
+	fork2 := make(chan bool, 1)
+	fork3 := make(chan bool, 1)
+	fork4 := make(chan bool, 1)
 
-	initForks(forkChannel)
-	initPhilosopher(forkChannel)
+	fork0 <- true
+	fork1 <- true
+	fork2 <- true
+	fork3 <- true
+	fork4 <- true
 
-}
-func forks(id int, forksChannel chan [5]int) {
-	// Example of sending an ID to the channel
-	//<-forksChannel[id]
+	var p1 = Philosopher{id: 0, forkChan1: fork0, forkChan2: fork1}
+	var p2 = Philosopher{id: 1, forkChan1: fork1, forkChan2: fork2}
+	var p3 = Philosopher{id: 2, forkChan1: fork2, forkChan2: fork3}
+	var p4 = Philosopher{id: 3, forkChan1: fork3, forkChan2: fork4}
+	var p5 = Philosopher{id: 4, forkChan1: fork4, forkChan2: fork0}
+
+	for i := 0; i < rounds; i++ {
+		wg.Add(5)
+		go p1.run(&wg, &mu)
+		go p2.run(&wg, &mu)
+		go p3.run(&wg, &mu)
+		go p4.run(&wg, &mu)
+		go p5.run(&wg, &mu)
+	}
+
+	wg.Wait()
+	fmt.Println(p1.eatCount, p2.eatCount, p3.eatCount, p4.eatCount, p5.eatCount)
+
 }
 
 type Philosopher struct {
-	id                  int
-	leftFork, rightFork int
+	id                   int
+	fork1, fork2         bool
+	forkChan1, forkChan2 chan bool
+	eatCount             int
 }
 
-// Corrected function to accept a channel of integers
-func philosopher(id int, forksChannel chan [5]int) {
-	p := Philosopher{
-		id:        id,
-		leftFork:  -1,
-		rightFork: -1,
-	}
+func (p *Philosopher) run(wg *sync.WaitGroup, mu *sync.Mutex) {
 
-	var rightFork int
-	var leftFork int
-
-	if ranBool() {
-		p.rightFork = requestFork(id)
-		p.leftFork = requestFork(id % 4) // size of array 5-1
-
-		if rightFork != -1 || leftFork != -1 {
-			isEating(p.id)
-		} else {
-			isThinking(p.id)
-		}
+	if rand.Intn(100)%2 == 0 {
+		eat(p, mu)
+		fmt.Println()
 	} else {
-		isThinking(id)
+		fmt.Println(p.id, "is thinking")
+		fmt.Println()
+		time.Sleep(5)
 	}
 
+	defer wg.Done()
 }
 
-func requestFork(id int, forkChannel chan []int) int {
-	// return -1 if it doesn't work
+func eat(p *Philosopher, mu *sync.Mutex) {
+	mu.Lock()
+	<-p.forkChan1
+	<-p.forkChan2
 
-	return 0
-}
+	time.Sleep(5)
+	fmt.Println(p.id, "is eating")
+	p.eatCount++
 
-func isThinking(id int) {
-	fmt.Printf("Philosopher ", id, " is thinking thoughts...")
-}
+	p.forkChan1 <- true
+	p.forkChan2 <- true
 
-func isEating(id int) {
-	fmt.Printf("Philosipher %v is eating pasta", id)
-}
-
-func timeLimit() int {
-	return rand.Intn(5) + 1
-}
-
-func ranBool() bool {
-	return rand.Intn(1) == 0
-}
-
-// Corrected initPhilosopher function
-func initPhilosopher(forks chan [5]int) {
-	go philosopher(0, forks)
-	go philosopher(1, forks)
-	go philosopher(2, forks)
-	go philosopher(3, forks)
-	go philosopher(4, forks)
-}
-
-func initForks(forkChannel chan [5]int) {
-	go forks(0, forkChannel)
-	go forks(1, forkChannel)
-	go forks(2, forkChannel)
-	go forks(3, forkChannel)
-	go forks(4, forkChannel)
+	mu.Unlock()
 }
