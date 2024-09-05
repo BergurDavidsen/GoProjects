@@ -7,73 +7,84 @@ import (
 	"time"
 )
 
-type Fork struct {
-	id       int
-	reserved bool
-	mu       *sync.Mutex
-}
-
-type Philosopher struct {
-	id                   int
-	forkChan1, forkChan2 chan Fork
-	eatCount             int
-	thinkCount           int
-}
-
-var (
-	rounds      = 500000
+/**
+ * Tweak the rounds and group if you want
+ * To see the thinking / eating philosophers in console
+ * change printResult = true
+ */
+var ( // global var
+	rounds      = 100000
+	group       = 10
+	forks       = group
 	printResult = false
-	mu          sync.Mutex
+	waitGroup   sync.WaitGroup
+	wg          = &waitGroup
+)
+
+type (
+	Fork struct {
+		id       int
+		reserved bool
+		mu       *sync.Mutex
+	}
+
+	Philosopher struct {
+		id                   int
+		forkChan1, forkChan2 chan Fork
+		eatCount             int
+		thinkCount           int
+	}
 )
 
 func main() {
-	var wg sync.WaitGroup
+	if group == 1 { // just to make sure a philosopher wants to eat alone
+		forks = 2
+	}
 
-	fork0 := make(chan Fork, 1)
-	fork1 := make(chan Fork, 1)
-	fork2 := make(chan Fork, 1)
-	fork3 := make(chan Fork, 1)
-	fork4 := make(chan Fork, 1)
+	forkArr := make([]chan Fork, forks)
+	groupArr := make([]Philosopher, group)
 
-	fork0 <- Fork{id: 0, mu: &sync.Mutex{}}
-	fork1 <- Fork{id: 1, mu: &sync.Mutex{}}
-	fork2 <- Fork{id: 2, mu: &sync.Mutex{}}
-	fork3 <- Fork{id: 3, mu: &sync.Mutex{}}
-	fork4 <- Fork{id: 4, mu: &sync.Mutex{}}
+	for i := 0; i < forks; i++ {
+		forkArr[i] = make(chan Fork, 1)              // make a channel for the Fork
+		forkArr[i] <- Fork{id: i, mu: &sync.Mutex{}} // make a thread for the fork
+	}
 
-	var p1 = Philosopher{id: 0, forkChan1: fork0, forkChan2: fork1}
-	var p2 = Philosopher{id: 1, forkChan1: fork1, forkChan2: fork2}
-	var p3 = Philosopher{id: 2, forkChan1: fork2, forkChan2: fork3}
-	var p4 = Philosopher{id: 3, forkChan1: fork3, forkChan2: fork4}
-	var p5 = Philosopher{id: 4, forkChan1: fork4, forkChan2: fork0}
+	for i := 0; i < group; i++ { // birth the philosophers
+		groupArr[i] = Philosopher{
+			id:        i,
+			forkChan1: forkArr[i],
+			forkChan2: forkArr[(i+1)%forks], // make sure the last philosopher shares fork with index 0
+		}
+	}
 
-	wg.Add(5)
-	go p1.run(&wg)
-	go p2.run(&wg)
-	go p3.run(&wg)
-	go p4.run(&wg)
-	go p5.run(&wg)
+	for i := 0; i < len(groupArr); i++ {
+		wg.Add(1)
+		go groupArr[i].run() // start program with the respective threads
+	}
 
 	wg.Wait()
-	fmt.Println("p1:", p1.eatCount, "\n", "p2:", p2.eatCount, "\n", "p3:", p3.eatCount, "\n", "p4:", p4.eatCount, "\n", "p5", p5.eatCount)
+	print(groupArr) // print the results
 }
 
-func (p *Philosopher) run(wg *sync.WaitGroup) {
+func (p *Philosopher) toString() string {
+	return fmt.Sprintf("Philosopher %v ----\n ate: %v times\n though: %v times\n", p.id, p.eatCount, p.thinkCount)
+}
+
+func (p *Philosopher) run() {
 	defer wg.Done()
 
 	for i := 0; i < rounds; i++ {
-		wg.Add(1) // add work
+		wg.Add(1)
 
-		if rand.Intn(100)%2 == 0 {
-			if p.id%4 == 0 {
-				go eat(p, wg, p.forkChan1, p.forkChan2)
+		if rand.Intn(100)%2 == 0 { // 50% they eat
+			if p.id%2 == 0 { // to prevent deadlock, odd/even approach
+				go eat(p, p.forkChan1, p.forkChan2)
 			} else {
-				go eat(p, wg, p.forkChan2, p.forkChan1)
+				go eat(p, p.forkChan2, p.forkChan1)
 			}
-
-		} else {
+		} else { // 50% they think
 			wg.Done()
-
+			p.thinkCount++
 			if printResult {
 				fmt.Println(p.id, "is thinking\n")
 			}
@@ -82,7 +93,7 @@ func (p *Philosopher) run(wg *sync.WaitGroup) {
 	}
 }
 
-func eat(p *Philosopher, wg *sync.WaitGroup, forkChan1 chan Fork, forkChan2 chan Fork) {
+func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
 	defer wg.Done()
 
 	f1 := <-forkChan1
@@ -103,4 +114,11 @@ func eat(p *Philosopher, wg *sync.WaitGroup, forkChan1 chan Fork, forkChan2 chan
 	p.forkChan2 <- f2
 	f1.mu.Unlock()
 	f2.mu.Unlock()
+}
+
+func print(array []Philosopher) {
+	fmt.Println("Stats\n")
+	for i := 0; i < len(array); i++ {
+		fmt.Println(array[i].toString())
+	}
 }
