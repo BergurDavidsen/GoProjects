@@ -10,18 +10,20 @@ import (
 /**
  * The program is OOP, which idk is ok to do here.
  * This approach uses an odd/even fork extractment
- * Tweak the rounds and group if you want
- * To see the thinking / eating philosophers in console
- * change printResult = true
+ * The print booleans are if you want them printed
+ * in the console
  */
 var ( // global var
-	rounds      = 100000
-	group       = 30
-	forks       = group
-	printResult = false
-	waitGroup   sync.WaitGroup
-	wg          = &waitGroup
-	threadCount = 0
+	rounds       = 20
+	group        = 20
+	forks        = group
+	waitingSeed  = 20000000
+	printActions = false
+	printLocks   = false
+	printResults = false
+	threadCount  = 0
+	waitGroup    sync.WaitGroup
+	wg           = &waitGroup
 )
 
 type (
@@ -66,11 +68,8 @@ func main() {
 
 	wg.Wait()
 
-	printStats(groupArr) // printStats the results
-}
+	printStats(groupArr)
 
-func (p *Philosopher) toString() string {
-	return fmt.Sprintf("Philosopher %v ----\n ate: %v times\n though: %v times\n", p.id, p.eatCount, p.thinkCount)
 }
 
 func (p *Philosopher) run() {
@@ -87,7 +86,7 @@ func (p *Philosopher) run() {
 			}
 		} else { // 50% they think
 			wg.Add(1)
-			go p.think()
+			go think(p)
 		}
 	}
 }
@@ -101,44 +100,53 @@ func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
 
 	f1.mu.Lock()
 	f2.mu.Lock()
+	if printLocks {
+		fmt.Println("philosopher:", p.id, "locked", f1.id, f2.id)
+	}
 
-	wg.Add(1)
-	go p.eat()
+	p.eatCount++
+	time.Sleep(randomMillis(waitingSeed))
+
+	if printActions {
+		fmt.Println(p.id, "is eating\n")
+	}
 
 	p.forkChan1 <- f1
 	p.forkChan2 <- f2
+	if printLocks {
+		fmt.Println("philosopher:", p.id, "unlocked", f1.id, f2.id)
+	}
 	f1.mu.Unlock()
 	f2.mu.Unlock()
+
 }
 
-func (p *Philosopher) think() { // more threads! more faster!
-	defer wg.Done()
-	threadCount++
+func think(p *Philosopher) {
+	wg.Done()
 
 	p.thinkCount++
-	if printResult {
+	if printActions {
 		fmt.Println(p.id, "is thinking\n")
 	}
-	time.Sleep(5000)
+	time.Sleep(randomMillis(waitingSeed))
 }
 
-func (p *Philosopher) eat() { // more threads! more faster!
-	defer wg.Done()
-	threadCount++
-	p.eatCount++
-	time.Sleep(5)
+func randomMillis(seed int) time.Duration {
+	return time.Duration(rand.Intn(seed))
+}
 
-	if printResult {
-		fmt.Println(p.id, "is eating\n")
-	}
+func (p *Philosopher) toString() string {
+	return fmt.Sprintf("Philosopher %v ----\n ate: %v times\n though: %v times\n", p.id, p.eatCount, p.thinkCount)
 }
 
 func printStats(array []Philosopher) {
-	fmt.Println("Stats\n")
-	for i := 0; i < len(array); i++ {
-		fmt.Println(array[i].toString())
-	}
-
 	fmt.Println("threadcount:", threadCount)
+
+	if printResults {
+		fmt.Println("Stats\n")
+		for i := 0; i < len(array); i++ {
+			fmt.Println(array[i].toString())
+		}
+	}
 
 }
