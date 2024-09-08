@@ -14,23 +14,21 @@ import (
  * in the console
  */
 var ( // global var
-	rounds       = 20
-	group        = 20
-	forks        = group
-	waitingSeed  = 20000000
-	printActions = false
-	printLocks   = false
-	printResults = false
-	threadCount  = 0
-	waitGroup    sync.WaitGroup
-	wg           = &waitGroup
+	rounds        = 3
+	group         = 5
+	forks         = group
+	waitingSeed   = 20000000 // random ms from 0-n
+	printActions  = true
+	printChannels = false
+	printResults  = false
+	threadCount   = 0
+	wg            = &sync.WaitGroup{}
 )
 
 type (
 	Fork struct {
 		id       int
 		reserved bool
-		mu       *sync.Mutex
 	}
 
 	Philosopher struct {
@@ -49,8 +47,8 @@ func main() {
 	groupArr := make([]Philosopher, group)
 
 	for i := 0; i < forks; i++ {
-		forkArr[i] = make(chan Fork, 1)              // make a channel for the Fork
-		forkArr[i] <- Fork{id: i, mu: &sync.Mutex{}} // make a thread for the fork
+		forkArr[i] = make(chan Fork, 1) // make a channel for the Fork
+		forkArr[i] <- Fork{id: i}       // make a thread for the fork
 	}
 
 	for i := 0; i < group; i++ { // birth the philosophers
@@ -69,7 +67,6 @@ func main() {
 	wg.Wait()
 
 	printStats(groupArr)
-
 }
 
 func (p *Philosopher) run() {
@@ -98,10 +95,8 @@ func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
 	f1 := <-forkChan1
 	f2 := <-forkChan2
 
-	f1.mu.Lock()
-	f2.mu.Lock()
-	if printLocks {
-		fmt.Println("philosopher:", p.id, "locked", f1.id, f2.id)
+	if printChannels {
+		fmt.Printf("Philosopher: %v, has aquired forks: %v, %v", p.id, f1.id, f2.id)
 	}
 
 	p.eatCount++
@@ -113,11 +108,9 @@ func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
 
 	p.forkChan1 <- f1
 	p.forkChan2 <- f2
-	if printLocks {
-		fmt.Println("philosopher:", p.id, "unlocked", f1.id, f2.id)
+	if printChannels {
+		fmt.Printf("Philosopher: %v, has released forks: %v, %v", p.id, f1.id, f2.id)
 	}
-	f1.mu.Unlock()
-	f2.mu.Unlock()
 
 }
 
