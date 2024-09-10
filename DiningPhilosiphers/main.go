@@ -3,87 +3,139 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
+	"time"
+)
+
+var (
+	rounds        = 10
+	group         = 5
+	forks         = group
+	waitingSeed   = 2
+	printActions  = false
+	printChannels = true
+	printResults  = true
+	wg            = &sync.WaitGroup{}
+)
+
+type (
+	Fork struct {
+		id int
+	}
+
+	Philosopher struct {
+		id                   int
+		forkChan1, forkChan2 chan Fork
+		eatCount             int
+		thinkCount           int
+	}
 )
 
 func main() {
-	//minMaxThinking := []int{2, 3, 4, 5, 6, 7}
-	forkChannel := make(chan [5]int)
+	if group == 1 {
+		forks = 2
+	}
+	forkArr := make([]chan Fork, forks)
+	groupArr := make([]Philosopher, group)
 
-	initForks(forkChannel)
-	initPhilosopher(forkChannel)
-
-}
-func forks(id int, forksChannel chan [5]int) {
-	// Example of sending an ID to the channel
-	//<-forksChannel[id]
-}
-
-type Philosopher struct {
-	id                  int
-	leftFork, rightFork int
-}
-
-// Corrected function to accept a channel of integers
-func philosopher(id int, forksChannel chan [5]int) {
-	p := Philosopher{
-		id:        id,
-		leftFork:  -1,
-		rightFork: -1,
+	for i := 0; i < forks; i++ {
+		forkArr[i] = make(chan Fork, 1)
+		go forkManager(forkArr[i], i)
 	}
 
-	var rightFork int
-	var leftFork int
-
-	if ranBool() {
-		p.rightFork = requestFork(id)
-		p.leftFork = requestFork(id % 4) // size of array 5-1
-
-		if rightFork != -1 || leftFork != -1 {
-			isEating(p.id)
-		} else {
-			isThinking(p.id)
+	for i := 0; i < group; i++ {
+		groupArr[i] = Philosopher{
+			id:        i,
+			forkChan1: forkArr[i],
+			forkChan2: forkArr[(i+1)%forks],
 		}
-	} else {
-		isThinking(id)
 	}
 
+	for i := 0; i < len(groupArr); i++ {
+		wg.Add(1)
+		go groupArr[i].run()
+	}
+
+	wg.Wait()
+	printStats(groupArr)
 }
 
-func requestFork(id int, forkChannel chan []int) int {
-	// return -1 if it doesn't work
-
-	return 0
+func forkManager(forkChan chan Fork, id int) {
+	for {
+		forkChan <- Fork{id: id}
+		<-forkChan
+	}
 }
 
-func isThinking(id int) {
-	fmt.Printf("Philosopher ", id, " is thinking thoughts...")
+func (p *Philosopher) run() {
+	defer wg.Done()
+
+	for i := 0; i < rounds; i++ {
+		if rand.Intn(100)%2 == 0 {
+			if p.id%2 == 0 {
+				eat(p, p.forkChan1, p.forkChan2)
+			} else {
+				eat(p, p.forkChan2, p.forkChan1)
+			}
+		} else {
+			think(p)
+		}
+	}
 }
 
-func isEating(id int) {
-	fmt.Printf("Philosipher %v is eating pasta", id)
+func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
+	wg.Add(1)
+	defer wg.Done()
+
+	// Philosopher acquires forks
+	f1 := <-forkChan1
+	f2 := <-forkChan2
+
+	if printChannels {
+		fmt.Printf("Philosopher: %v, has acquired forks: %v, %v\n", p.id, f1.id, f2.id)
+	}
+
+	p.eatCount++
+	time.Sleep(randomMillis(waitingSeed))
+
+	if printActions {
+		fmt.Println(p.id, "is eating")
+	}
+
+	// Philosopher releases forks
+	forkChan1 <- f1
+	forkChan2 <- f2
+	if printChannels {
+		fmt.Printf("Philosopher: %v, has released forks: %v, %v\n", p.id, f1.id, f2.id)
+	}
 }
 
-func timeLimit() int {
-	return rand.Intn(5) + 1
+func think(p *Philosopher) {
+	wg.Add(1)
+	defer wg.Done()
+
+	p.thinkCount++
+	if printActions {
+		fmt.Println(p.id, "is thinking")
+	}
+	time.Sleep(randomMillis(waitingSeed))
 }
 
-func ranBool() bool {
-	return rand.Intn(1) == 0
+func randomMillis(seed int) time.Duration {
+	return time.Duration(rand.Intn(seed)) * time.Millisecond
 }
 
-// Corrected initPhilosopher function
-func initPhilosopher(forks chan [5]int) {
-	go philosopher(0, forks)
-	go philosopher(1, forks)
-	go philosopher(2, forks)
-	go philosopher(3, forks)
-	go philosopher(4, forks)
+func (p *Philosopher) toString() string {
+	return fmt.Sprintf("Philosopher %v ----\n ate: %v times\n thought: %v times\n", p.id, p.eatCount, p.thinkCount)
 }
 
-func initForks(forkChannel chan [5]int) {
-	go forks(0, forkChannel)
-	go forks(1, forkChannel)
-	go forks(2, forkChannel)
-	go forks(3, forkChannel)
-	go forks(4, forkChannel)
+func printStats(array []Philosopher) {
+	fmt.Println("threadcount:", len(array))
+
+	if printResults {
+		fmt.Println("STATS:\n")
+		for _, p := range array {
+			fmt.Println(p.toString())
+		}
+	}
 }
