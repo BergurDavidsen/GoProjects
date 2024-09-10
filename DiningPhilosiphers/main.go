@@ -14,13 +14,13 @@ import (
  * in the console
  */
 var ( // global var
-	rounds        = 3
+	rounds        = 10
 	group         = 5
 	forks         = group
 	waitingSeed   = 20000000 // random ms from 0-n
 	printActions  = true
 	printChannels = false
-	printResults  = false
+	printResults  = true
 	threadCount   = 0
 	wg            = &sync.WaitGroup{}
 )
@@ -43,25 +43,29 @@ func main() {
 	if group == 1 { // just to make sure a philosopher wants to eat alone
 		forks = 2
 	}
+
 	forkArr := make([]chan Fork, forks)
 	groupArr := make([]Philosopher, group)
 
 	for i := 0; i < forks; i++ {
+		wg.Add(1)
 		forkArr[i] = make(chan Fork, 1) // make a channel for the Fork
-		forkArr[i] <- Fork{id: i}       // make a thread for the fork
+		f := Fork{id: i}
+		forkArr[i] <- f // insert fork into channel
+		go f.run()      // Start a go routine
 	}
 
 	for i := 0; i < group; i++ { // birth the philosophers
+		wg.Add(1)
+
 		groupArr[i] = Philosopher{
 			id:        i,
 			forkChan1: forkArr[i],
 			forkChan2: forkArr[(i+1)%forks], // make sure the last philosopher shares fork with index 0
 		}
-	}
 
-	for i := 0; i < len(groupArr); i++ {
-		wg.Add(1)
 		go groupArr[i].run() // start program with the respective threads
+
 	}
 
 	wg.Wait()
@@ -112,6 +116,12 @@ func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
 		fmt.Printf("Philosopher: %v, has released forks: %v, %v", p.id, f1.id, f2.id)
 	}
 
+}
+
+func (f *Fork) run() {
+	threadCount++
+	wg.Done()
+	wg.Wait()
 }
 
 func think(p *Philosopher) {
