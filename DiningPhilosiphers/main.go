@@ -18,9 +18,9 @@ var ( // global var
 	group         = 5
 	forks         = group
 	waitingSeed   = 20000000 // random ms from 0-n
-	printActions  = true
-	printChannels = false
-	printResults  = true
+	printActions  = !true
+	printChannels = !false
+	printResults  = !true
 	threadCount   = 0
 	wg            = &sync.WaitGroup{}
 )
@@ -79,28 +79,25 @@ func (p *Philosopher) run() {
 
 	for i := 0; i < rounds; i++ {
 		if rand.Intn(100)%2 == 0 { // 50% they eat
-			wg.Add(1)
 			if p.id%2 == 0 { // to prevent deadlock, odd/even approach
-				go eat(p, p.forkChan1, p.forkChan2)
+				eat(p, p.forkChan1, p.forkChan2)
 			} else {
-				go eat(p, p.forkChan2, p.forkChan1)
+				eat(p, p.forkChan2, p.forkChan1)
 			}
 		} else { // 50% they think
-			wg.Add(1)
-			go think(p)
+			think(p)
 		}
 	}
 }
 
 func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
-	defer wg.Done()
 	threadCount++
 
-	f1 := <-forkChan1
-	f2 := <-forkChan2
+	f1 := <-forkChan1 // fc 2
+	f2 := <-forkChan2 // fc 1
 
 	if printChannels {
-		fmt.Printf("Philosopher: %v, has aquired forks: %v, %v", p.id, f1.id, f2.id)
+		fmt.Printf("Philosopher: %v, has aquired forks: %v, %v\n", p.id, f1.id, f2.id)
 	}
 
 	p.eatCount++
@@ -110,10 +107,10 @@ func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
 		fmt.Println(p.id, "is eating\n")
 	}
 
-	p.forkChan1 <- f1
-	p.forkChan2 <- f2
+	forkChan1 <- f1 // f2
+	forkChan2 <- f2 // f1
 	if printChannels {
-		fmt.Printf("Philosopher: %v, has released forks: %v, %v", p.id, f1.id, f2.id)
+		fmt.Printf("Philosopher: %v, has released forks: %v, %v\n", p.id, f1.id, f2.id)
 	}
 
 }
@@ -125,8 +122,6 @@ func (f *Fork) run() {
 }
 
 func think(p *Philosopher) {
-	wg.Done()
-
 	p.thinkCount++
 	if printActions {
 		fmt.Println(p.id, "is thinking\n")
