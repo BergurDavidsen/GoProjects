@@ -19,10 +19,6 @@ func main() {
 	go server(server_sender, server_receiver, server_verification)
 	go forwarder(client_sender, client_receiver, client_verification, server_verification)
 	go God(logger)
-
-	hashmap := make(map[int]string)
-	
-
 }
 
 func client(sequence_number, sender, receiver, verification chan string) {
