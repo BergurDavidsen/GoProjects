@@ -1,74 +1,76 @@
 package main
 
-import "fmt"
-
-
+import (
+	"fmt"
+	"time"
+)
 
 func main() {
-	client_sender := make(chan string, 1)
-	client_receiver := make(chan string, 1)
-	client_verification := make(chan string, 1)
+	clientSender := make(chan string, 1)
+	clientReceiver := make(chan string, 1)
+	clientVerification := make(chan string, 1)
 
-	server_sender := make(chan string, 1)
-	server_receiver := make(chan string, 1)
-	server_verification := make(chan string, 1)
+	serverSender := make(chan string, 1)
+	serverReceiver := make(chan string, 1)
+	logger := make(chan string, 1)
 
-	God := make(chan string, 1)
-
-	go client(client_sender, client_receiver, client_verification)
-	go server(server_sender, server_receiver, server_verification)
-	go forwarder(client_sender, client_receiver, client_verification, server_verification)
+	go client(clientSender, clientReceiver, clientVerification)
+	go server(serverSender, serverReceiver)
+	go forwarder(clientSender, clientReceiver, serverSender, serverReceiver)
 	go God(logger)
+
+	time.Sleep(5 * time.Second)
 }
 
-func client(sequence_number, sender, receiver, verification chan string) {
-	seq := 1 //starts with 1
+func client(sender, receiver, verification chan string) {
+	seq := 1
 
-	//sends syn msg to sender channel
+	// SYN msg to server
 	msg := getMessage(seq, "SYN")
-	fmt.Print("Client sending msg: ", msg)
+	fmt.Println("Client sending msg:", msg)
 	sender <- msg
 
-	//waits to receive SYN-ACK from client
-	synaAck := <-receiver
-	fmt.Println("Client received: ", synAck)
+	// Receive SYN-ACK from server
+	synAck := <-receiver
+	fmt.Println("Client received:", synAck)
 
+	// ACK msg to sender channel
 	msg = getMessage(seq+1, "ACK")
-	fmt.
+	fmt.Println("Client sending msg:", msg)
+	sender <- msg
 }
 
-func server(sequence_number, sender, receiver, verification chan string) {
+func server(sender, receiver chan string) {
+	syn := <-receiver
+	fmt.Println("Server received:", syn)
 
+	msg := getMessage(1, "SYN-ACK")
+	fmt.Println("Server sending msg:", msg)
+	sender <- msg
+
+	ack := <-receiver
+	fmt.Println("Server received:", ack)
 }
 
-
-func forwarder(client_sender, client_receiver, client_verification,
-	server_sender, server_receiver, server_verification chan string) {
-
-	for{
-		select{
-		case msg := <-client_sender:
-			fmt.Println()
-			server_receiver <- msg
+func forwarder(clientSender, clientReceiver, serverSender, serverReceiver chan string) {
+	for {
+		select {
+		case msg := <-clientSender:
+			fmt.Println("Forwarder received from client:", msg)
+			serverReceiver <- msg
+		case msg := <-serverSender:
+			fmt.Println("Forwarder received from server:", msg)
+			clientReceiver <- msg
 		}
 	}
 }
 
-func God(logger chan string){
-	for log := range logger{
+func God(logger chan string) {
+	for log := range logger {
 		fmt.Println(log)
 	}
 }
 
-func verification(sender, receiver, verification chan string) {
-
-}
-
-func getMessage(SEQno int, Type string) string {
-
-	return "fmt."
-}
-
-func randomSequenceNo() int {
-
+func getMessage(seqNo int, msgType string) string {
+	return fmt.Sprintf("SEQ: %d, TYPE: %s", seqNo, msgType)
 }
