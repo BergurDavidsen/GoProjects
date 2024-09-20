@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	conn, err := net.Dial("tcp", "localhost:8080")
+	conn, err := net.Dial("tcp", "localhost:8000")
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
 		return
@@ -44,6 +44,15 @@ func main() {
 			ack := "ACK"
 			fmt.Println("Client sending:", ack)
 			_, err = conn.Write([]byte(ack))
+			if err != nil {
+				fmt.Println("Error writing to connection:", err)
+				return
+			}
+
+			// Send "Hello world" message
+			helloMsg := "Hello world"
+			fmt.Println("Client sending:", helloMsg)
+			_, err = conn.Write([]byte(helloMsg))
 			if err != nil {
 				fmt.Println("Error writing to connection:", err)
 				return

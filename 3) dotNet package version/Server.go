@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	listener, err := net.Listen("tcp", ":8080")
+	listener, err := net.Listen("tcp", ":8000")
 	if err != nil {
 		fmt.Println("Error starting server:", err)
 		return
@@ -18,7 +18,7 @@ func main() {
 			fmt.Println("Error closing listener:", err)
 		}
 	}(listener)
-	fmt.Println("Server is listening on port 8080")
+	fmt.Println("Server is listening on port 8000")
 
 	for {
 		conn, err := listener.Accept()
@@ -65,6 +65,14 @@ func handleConnection(conn net.Conn) {
 		}
 		n, err = conn.Read(buf)
 		if err == nil {
+			fmt.Println("Server received:", string(buf[:n]))
+
+			// Receive "Hello world" message
+			n, err = conn.Read(buf)
+			if err != nil {
+				fmt.Println("Error reading from connection:", err)
+				return
+			}
 			fmt.Println("Server received:", string(buf[:n]))
 			return
 		}
