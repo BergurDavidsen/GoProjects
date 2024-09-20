@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 func main() {
@@ -11,7 +12,12 @@ func main() {
 		fmt.Println("Error starting server:", err)
 		return
 	}
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+			fmt.Println("Error closing listener:", err)
+		}
+	}(listener)
 	fmt.Println("Server is listening on port 8080")
 
 	for {
@@ -25,7 +31,12 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+			fmt.Println("Error closing connection:", err)
+		}
+	}(conn)
 
 	// Receive SYN
 	buf := make([]byte, 1024)
@@ -36,20 +47,28 @@ func handleConnection(conn net.Conn) {
 	}
 	fmt.Println("Server received:", string(buf[:n]))
 
-	// Send SYN-ACK
+	// Send SYN-ACK with retry mechanism
 	synAck := "SYN-ACK"
-	fmt.Println("Server sending:", synAck)
-	_, err = conn.Write([]byte(synAck))
-	if err != nil {
-		fmt.Println("Error writing to connection:", err)
-		return
-	}
+	for i := 0; i < 3; i++ {
+		fmt.Println("Server sending:", synAck)
+		_, err = conn.Write([]byte(synAck))
+		if err != nil {
+			fmt.Println("Error writing to connection:", err)
+			return
+		}
 
-	// Receive ACK
-	n, err = conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading from connection:", err)
-		return
+		// Wait for ACK with timeout
+		err := conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+		if err != nil {
+			fmt.Println("Error setting read deadline:", err)
+			return
+		}
+		n, err = conn.Read(buf)
+		if err == nil {
+			fmt.Println("Server received:", string(buf[:n]))
+			return
+		}
+		fmt.Println("Error reading from connection, retrying:", err)
 	}
-	fmt.Println("Server received:", string(buf[:n]))
+	fmt.Println("Failed to receive ACK after retries")
 }
