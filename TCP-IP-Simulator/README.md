@@ -20,8 +20,7 @@
 
 *d) In case messages can be delayed or lost, how does your implementation handle message loss?*
 
-- Ours currently don't have any, but if we did, this is how: 
-  - We would implement an acknowledgement and retransmission system, where each message sent between the parties would require an acknowledgement from the receiver, within a certain time period. This would ensure a party could communicate a failure of message-transmission and order a retransmition of the message between 1-n times (where n is a limit); After n retries, it stops and prints a fail statement. 
+  - We have implemented an acknowledgement and retransmission system, where each message sent between the parties would require an acknowledgement from the receiver, within a certain time period. This would ensure a party could communicate a failure of message-transmission and order a retransmition of the message between 1-n times (where n is a limit); After n retries, it stops and prints a fail statement. 
   
 *e) Why is the 3-way handshake important?*
 
