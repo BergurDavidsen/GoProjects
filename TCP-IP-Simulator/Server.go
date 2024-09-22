@@ -1,10 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"net"
 	"time"
 )
+
+type Packet struct {
+	Syn, Ack int
+	Data     string
+}
 
 func main() {
 	listener, err := net.Listen("tcp", ":8000")
@@ -41,17 +48,29 @@ func handleConnection(conn net.Conn) {
 	// Receive SYN
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf)
+
 	if err != nil {
 		fmt.Println("Error reading from connection:", err)
 		return
 	}
 	fmt.Println("Server received:", string(buf[:n]))
 
+	//this is to map the packets to different fields
+	syn := toPacket(buf[:n])
+
+	seqNum := rand.IntN(10000)
+
+	packet := Packet{Syn: seqNum, Ack: syn.Syn + 1}
 	// Send SYN-ACK with retry mechanism
-	synAck := "SYN-ACK"
+	syn_ack, err := toBytes(packet)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	for i := 0; i < 3; i++ {
-		fmt.Println("Server sending:", synAck)
-		_, err = conn.Write([]byte(synAck))
+		fmt.Println("Server sending:", string(syn_ack))
+
+		_, err = conn.Write(syn_ack)
 		if err != nil {
 			fmt.Println("Error writing to connection:", err)
 			return
@@ -64,19 +83,32 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 		n, err = conn.Read(buf)
+
+		ack := toPacket(buf)
+
 		if err == nil {
-			fmt.Println("Server received:", string(buf[:n]))
+			fmt.Println("Server received:", ack)
 
 			// Receive "Hello world" message
-			n, err = conn.Read(buf)
-			if err != nil {
-				fmt.Println("Error reading from connection:", err)
-				return
-			}
-			fmt.Println("Server received:", string(buf[:n]))
-			return
+			fmt.Printf("Server message: %v", ack.Data)
 		}
 		fmt.Println("Error reading from connection, retrying:", err)
 	}
 	fmt.Println("Failed to receive ACK after retries")
+}
+
+func toPacket(buf []byte) Packet {
+
+	var jsonMap Packet
+	json.Unmarshal(buf, &jsonMap)
+
+	return jsonMap
+}
+
+func toBytes(packet Packet) ([]byte, error) {
+	var bytes []byte
+
+	bytes, err := json.Marshal(packet)
+
+	return bytes, err
 }
