@@ -55,31 +55,32 @@ func main() {
 			fmt.Println("Error setting read deadline:", err)
 			return
 		}
-		n, err := conn.Read(buf)
-		if err == nil {
-			synAck := toPacket(buf[:n])
-			if synAck.Ack == seqNum+1 {
-				fmt.Println("Client received:", string(buf[:n]))
 
-				// Prepare and send the ACK packet.
-				message := "Hello World"
-				if len(os.Args) > 1 {
-					message = os.Args[1]
-				}
-				packet = Packet{Syn: synAck.Ack, Ack: synAck.Syn + 1, Data: message}
-				ack, err := toBytes(packet)
-				if err != nil {
-					fmt.Println("Error converting packet to bytes:", err)
-					return
-				}
-				fmt.Println("Client sending:", string(ack))
-				_, err = conn.Write(ack)
-				if err != nil {
-					fmt.Println("Error writing to connection:", err)
-					return
-				}
+		n, err := conn.Read(buf)
+		syn_ack := toPacket(buf[:n])
+		if err == nil && syn_ack.Ack == seqNum+1 {
+
+			fmt.Println("Client received:", string(buf[:n]))
+
+			// Prepare and send the ACK packet.
+			message := "Hello World"
+			if len(os.Args) > 1 {
+				message = os.Args[1]
+			}
+			packet = Packet{Syn: syn_ack.Ack, Ack: syn_ack.Syn + 1, Data: message}
+			ack, err := toBytes(packet)
+			if err != nil {
+				fmt.Println("Error converting packet to bytes:", err)
 				return
 			}
+			fmt.Println("Client sending:", string(ack))
+			_, err = conn.Write(ack)
+			if err != nil {
+				fmt.Println("Error writing to connection:", err)
+				return
+			}
+			return
+
 		}
 		fmt.Println("Error reading from connection, retrying:", err)
 	}

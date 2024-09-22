@@ -84,8 +84,9 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 		n, err = conn.Read(buf)
-		if err == nil {
-			ack := toPacket(buf[:n])
+		ack := toPacket(buf[:n])
+
+		if err == nil && ack.Ack == seqNum+1 {
 			fmt.Println("Server received:", string(buf[:n]))
 
 			// Print the received "Hello world" message.
