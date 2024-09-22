@@ -53,10 +53,10 @@ func handleConnection(conn net.Conn) {
 		fmt.Println("Error reading from connection:", err)
 		return
 	}
+	syn := toPacket(buf[:n])
 	fmt.Println("Server received:", string(buf[:n]))
 
 	//this is to map the packets to different fields
-	syn := toPacket(buf[:n])
 
 	seqNum := rand.IntN(10000)
 
@@ -84,13 +84,14 @@ func handleConnection(conn net.Conn) {
 		}
 		n, err = conn.Read(buf)
 
-		ack := toPacket(buf)
+		ack := toPacket(buf[:n])
 
 		if err == nil {
-			fmt.Println("Server received:", ack)
+			fmt.Println("Server received:", string(buf[:n]))
 
 			// Receive "Hello world" message
-			fmt.Printf("Server message: %v", ack.Data)
+			fmt.Printf("Server message: %s\n", ack.Data)
+			return
 		}
 		fmt.Println("Error reading from connection, retrying:", err)
 	}
@@ -101,14 +102,10 @@ func toPacket(buf []byte) Packet {
 
 	var jsonMap Packet
 	json.Unmarshal(buf, &jsonMap)
-
 	return jsonMap
 }
 
 func toBytes(packet Packet) ([]byte, error) {
-	var bytes []byte
-
-	bytes, err := json.Marshal(packet)
-
-	return bytes, err
+	// JSON marshalling now works with the string field "Data"
+	return json.Marshal(packet)
 }

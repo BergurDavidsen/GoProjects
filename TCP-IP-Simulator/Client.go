@@ -58,13 +58,13 @@ func main() {
 		syn_ack := toPacket(buf[:n])
 
 		if err == nil && syn_ack.Ack == seqNum+1 {
-			fmt.Println("Client received:", syn_ack)
+			fmt.Println("Client received:", string(buf[:n]))
 
 			// Send ACK
 
 			var message string
 
-			if len(os.Args) < 1 {
+			if len(os.Args) <= 1 {
 				message = "Hello World"
 			} else {
 				message = os.Args[1]
@@ -93,17 +93,16 @@ func main() {
 }
 
 func toPacket(buf []byte) Packet {
+	var packet Packet
+	err := json.Unmarshal(buf, &packet)
+	if err != nil {
+		fmt.Println("Error unmarshalling packet:", err)
+	}
 
-	var jsonMap Packet
-	json.Unmarshal(buf, &jsonMap)
-
-	return jsonMap
+	return packet
 }
 
 func toBytes(packet Packet) ([]byte, error) {
-	var bytes []byte
-
-	bytes, err := json.Marshal(packet)
-
-	return bytes, err
+	// JSON marshalling now works with the string field "Data"
+	return json.Marshal(packet)
 }
