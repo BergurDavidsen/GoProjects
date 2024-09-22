@@ -8,11 +8,11 @@
 
 - Our solution implements a type called ***Packet***. This can include *SYN ACK* and *Data*. This is to ensure a single packet exchange between a client and server.
 
-- The data structure used to transmit data and meta-data is channels. Channels are used to transmit data and metadata between different parts of the program such as the client, server, forwarder while also providing a way for goroutines to communicate with each other. 
-
 *b) Does your implementation use threads or processes? Why is it not realistic to use threads?*
 
-- The implementation uses goroutines, which are lightweight threads. It's not realistic to use threads, as goroutines are more efficient in terms of memory and scheduling, specifically handling many concurrent connections. 
+- The implementation uses goroutines, which are lightweight, managed by the Go runtime, and used for concurrency. Each of the go statements in your code, like go handleConnection(conn), spawns a new goroutine.
+The implementation doesn’t use separate OS processes. All the code runs in the same process, managed by the Go runtime, utilizing goroutines for concurrent tasks.
+OS threads are much heavier than goroutines, consuming more memory and CPU resources. If you were to handle each connection with a separate thread, it would not scale well with thousands of concurrent connections.
 
 *c) In case the network changes the order in which messages are delivered, how would you handle message re-ordering?*
 
@@ -20,7 +20,7 @@
 
 *d) In case messages can be delayed or lost, how does your implementation handle message loss?*
 
-  - We have implemented an acknowledgement and retransmission system, where each message sent between the parties would require an acknowledgement from the receiver, within a certain time period. This would ensure a party could communicate a failure of message-transmission and order a retransmition of the message between 1-n times (where n is a limit); After n retries, it stops and prints a fail statement. 
+  - We have implemented an acknowledgement and retransmission system, where each message sent between the parties would require an acknowledgement from the receiver, within a certain time period. This would ensure a party could communicate a failure of message-transmission and order a retransmition of the message between 1-3 times; After 3 retries, it stops and prints a fail statement. 
   
 *e) Why is the 3-way handshake important?*
 
