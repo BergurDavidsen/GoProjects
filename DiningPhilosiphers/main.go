@@ -1,150 +1,129 @@
 package main
 
+/**
+* Arbi
+* Berd
+* Broh
+* Koad
+ */
 import (
 	"fmt"
-	"math/rand"
 	"sync"
-	"time"
 )
 
-/**
- * The program is OOP, which idk is ok to do here.
- * This approach uses an odd/even fork extractment
- * The print booleans are if you want them printed
- * in the console
- */
-var ( // global var
-	rounds        = 10
-	group         = 5
-	forks         = group
-	waitingSeed   = 20000000 // random ms from 0-n
-	printActions  = !true
-	printChannels = !false
-	printResults  = !true
-	threadCount   = 0
-	wg            = &sync.WaitGroup{}
-)
-
-type (
-	Fork struct {
-		id       int
-		reserved bool
-	}
-
-	Philosopher struct {
-		id                   int
-		forkChan1, forkChan2 chan Fork
-		eatCount             int
-		thinkCount           int
-	}
+var (
+	wg          = &sync.WaitGroup{}
+	request     = make([]chan int, 5)
+	release     = make([]chan int, 5)
+	philChannel = make([]chan int, 5)
+	group       = 5 //needs to be 2 or more
 )
 
 func main() {
-	if group == 1 { // just to make sure a philosopher wants to eat alone
-		forks = 2
+
+	// Initialize fork channels with values
+	for i := 0; i < 5; i++ {
+		// Use buffered channels
+		release[i] = make(chan int, 1)
+		philChannel[i] = make(chan int, 2)
+		request[i] = make(chan int, 1)
+
 	}
 
-	forkArr := make([]chan Fork, forks)
-	groupArr := make([]Philosopher, group)
-
-	for i := 0; i < forks; i++ {
+	for i := 0; i < group; i++ { // run go routines
 		wg.Add(1)
-		forkArr[i] = make(chan Fork, 1) // make a channel for the Fork
-		f := Fork{id: i}
-		forkArr[i] <- f // insert fork into channel
-		go f.run()      // Start a go routine
+		go philosopher(i)
+		go forks(i)
 	}
-
-	for i := 0; i < group; i++ { // birth the philosophers
-		wg.Add(1)
-
-		groupArr[i] = Philosopher{
-			id:        i,
-			forkChan1: forkArr[i],
-			forkChan2: forkArr[(i+1)%forks], // make sure the last philosopher shares fork with index 0
-		}
-
-		go groupArr[i].run() // start program with the respective threads
-
-	}
-
+	//wait for done running
 	wg.Wait()
-
-	printStats(groupArr)
 }
 
-func (p *Philosopher) run() {
-	defer wg.Done()
-	threadCount++
+/**
+* The philosopher function
+ */
+func philosopher(id int) {
 
-	for i := 0; i < rounds; i++ {
-		if rand.Intn(100)%2 == 0 { // 50% they eat
-			if p.id%2 == 0 { // to prevent deadlock, odd/even approach
-				eat(p, p.forkChan1, p.forkChan2)
-			} else {
-				eat(p, p.forkChan2, p.forkChan1)
+	//initialize counters
+	eatCount := 0
+	thinkCount := 0
+
+	//initialize left and right
+	var left int
+	var right int
+
+	//To prevent deadlock, we use odd-even approach to make sure some philosopher pick up the same first fork
+	if id%2 == 0 {
+		left = id
+		right = (id + 1) % 5
+	} else {
+		right = id
+		left = (id + 1) % 5
+	}
+
+	//main philosopher logic
+	for {
+		if eatCount >= 3 {
+			fmt.Println(id, "is done eating and is very full!😍🥰😘🤢 Thought", thinkCount, "times🤔🧠🧐🔥")
+
+			wg.Done()
+			return
+
+		}
+		//sends request for forks
+		request[left] <- id
+		request[right] <- id
+
+		select {
+		//picks up first fork if available
+		case response := <-philChannel[id]:
+
+			select {
+			//picks up second fork if available
+			case <-philChannel[id]:
+				//has both forks and therfore eats
+				fmt.Printf("%d is eating🍽️🍔🍺🍺\n", id)
+				eatCount++
+				//releases all forks when done eating
+				release[left] <- id
+				release[right] <- id
+			default:
+				//second fork not available, relesases first fork
+				release[response] <- id
+				thinkCount++
+				fmt.Printf("%d is thinking🤔💭\n", id)
 			}
-		} else { // 50% they think
-			think(p)
+		default:
+			//thinks because no fork is available
+			thinkCount++
+			fmt.Printf("%d is thinking🤔💭\n", id)
+
 		}
 	}
-}
-
-func eat(p *Philosopher, forkChan1 chan Fork, forkChan2 chan Fork) {
-	threadCount++
-
-	f1 := <-forkChan1 // fc 2
-	f2 := <-forkChan2 // fc 1
-
-	if printChannels {
-		fmt.Printf("Philosopher: %v, has aquired forks: %v, %v\n", p.id, f1.id, f2.id)
-	}
-
-	p.eatCount++
-	time.Sleep(randomMillis(waitingSeed))
-
-	if printActions {
-		fmt.Println(p.id, "is eating\n")
-	}
-
-	forkChan1 <- f1 // f2
-	forkChan2 <- f2 // f1
-	if printChannels {
-		fmt.Printf("Philosopher: %v, has released forks: %v, %v\n", p.id, f1.id, f2.id)
-	}
 
 }
 
-func (f *Fork) run() {
-	threadCount++
-	wg.Done()
-	wg.Wait()
-}
+/**
+* The fork function
+ */
 
-func think(p *Philosopher) {
-	p.thinkCount++
-	if printActions {
-		fmt.Println(p.id, "is thinking\n")
-	}
-	time.Sleep(randomMillis(waitingSeed))
-}
+func forks(id int) {
+	available := true
+	for {
+		select {
+		//checks if philosopher has requested this fork
+		case req := <-request[id]:
 
-func randomMillis(seed int) time.Duration {
-	return time.Duration(rand.Intn(seed))
-}
-
-func (p *Philosopher) toString() string {
-	return fmt.Sprintf("Philosopher %v ----\n ate: %v times\n though: %v times\n", p.id, p.eatCount, p.thinkCount)
-}
-
-func printStats(array []Philosopher) {
-	fmt.Println("threadcount:", threadCount)
-
-	if printResults {
-		fmt.Println("Stats\n")
-		for i := 0; i < len(array); i++ {
-			fmt.Println(array[i].toString())
+			if available {
+				//give permsission to pick fork up
+				available = false
+				philChannel[req] <- id
+			}
+		case <-release[id]:
+			//philosopher releases this fork and makes it available for others
+			available = true
 		}
+
 	}
 
 }
