@@ -23,7 +23,7 @@ import (
 // and some general channels in which the fork and philosopher communicates through
 var (
 	wg          = &sync.WaitGroup{}
-	group       = 601 // must be > 1; 1 philosopher must not eat alone
+	group       = 5 // must be > 1; 1 philosopher must not eat alone
 	request     = make([]chan int, group)
 	release     = make([]chan int, group)
 	philChannel = make([]chan int, group)
