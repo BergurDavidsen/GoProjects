@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package chittychat;  // Package name for proto
+
+option go_package = "./Chitty-Chat";  // Add this line
+
+
+message Person {
+  string name = 1;
+  int32 id = 2;
+}
+
+// The greeter service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
