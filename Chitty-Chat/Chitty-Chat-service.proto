@@ -1,27 +1,32 @@
 syntax = "proto3";
 
-package chittychat;  // Package name for proto
+package chittychatservice;
 
-option go_package = "./Chitty-Chat";  // Add this line
+option go_package = "e:/GoProjects/Chitty-Chat/Chitty-Chat/chittychatservice";
 
-
-message Person {
-  string name = 1;
-  int32 id = 2;
+// Message represents a chat message with its metadata
+message User {
+  string id = 1;
+  string name = 2;
 }
 
-// The greeter service definition.
-service Greeter {
-  // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+message Message {
+  string id = 1;
+  string text = 2;
+  int64 timestamp = 3;
 }
 
-// The request message containing the user's name.
-message HelloRequest {
-  string name = 1;
+message Connect {
+  User user = 1;
+  int64 timestamp = 2;
+  bool active = 3;
 }
 
-// The response message containing the greetings
-message HelloReply {
-  string message = 1;
+message Close{}
+
+// Service definition
+service ChittyChat {
+  rpc CreateStream(Connect) returns (stream Message) ;
+  rpc BroadcastMessage(Message) returns (Close) ;
+
 }
