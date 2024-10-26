@@ -69,6 +69,7 @@ func (ch *clienthandle) clientConfig() {
 	}
 	ch.clientName = strings.Trim(name, "\r\n")
 
+
 }
 
 //send message
@@ -100,17 +101,20 @@ func (ch *clienthandle) sendMessage() {
 }
 
 //receive message
+
 func (ch *clienthandle) receiveMessage() {
+    for {
+        mssg, err := ch.stream.Recv()
+        if err != nil {
+            log.Printf("Error in receiving message from server :: %v", err)
+            continue
+        }
 
-	//create a loop
-	for {
-		mssg, err := ch.stream.Recv()
-		if err != nil {
-			log.Printf("Error in receiving message from server :: %v", err)
-		}
-
-		//print message to console
-		fmt.Printf("%s : %s \n",mssg.Name,mssg.Body)
-		
-	}
+        // Display messages with timestamps
+        if mssg.IsSystemMessage {
+            fmt.Printf("[%s] 🔔 System: %s\n", mssg.Timestamp, mssg.Body)
+        } else {
+            fmt.Printf("[%s] %s: %s\n", mssg.Timestamp, mssg.Name, mssg.Body)
+        }
+    }
 }
