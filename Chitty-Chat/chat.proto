@@ -2,19 +2,32 @@ syntax = "proto3";
 
 package chatserver;
 
+// Message from client to server
 message FromClient {
-
-    string name = 1;
-    string body = 2;
+    string client_id = 1;     // Unique client identifier
+    string name = 2;          // Display name
+    string body = 3;          // Message content (max 128 chars)
+    int64 timestamp = 4;      // Lamport timestamp
+    MessageType type = 5;     // Type of message
 }
 
+// Message from server to clients
 message FromServer {
-
-    string name = 1;
-    string body = 2; 
+    string client_id = 1;     // Original sender's ID
+    string name = 2;          // Display name
+    string body = 3;          // Message content
+    int64 timestamp = 4;      // Lamport timestamp
+    MessageType type = 5;     // Type of message
 }
 
-service Services {
+// Different types of messages
+enum MessageType {
+    CHAT_MESSAGE = 0;    // Regular chat message
+    JOIN = 1;           // Client joining
+    LEAVE = 2;         // Client leaving
+}
 
-    rpc ChatService(stream FromClient) returns (stream FromServer){};
+service ChatService {
+    // Bidirectional streaming RPC for chat messages
+    rpc Chat(stream FromClient) returns (stream FromServer) {}
 }

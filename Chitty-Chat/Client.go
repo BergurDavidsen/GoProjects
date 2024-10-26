@@ -4,113 +4,141 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"grpcChatServer/chatserver"
 	"log"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"google.golang.org/grpc"
 )
 
-func main() {
+type ChatClient struct {
+	stream    Services_ChatClient
+	clientID  string
+	name      string
+	timestamp int64
+}
 
-	fmt.Println("Enter Server IP:Port ::: ")
-	reader := bufio.NewReader(os.Stdin)
-	serverID, err := reader.ReadString('\n')
-
-	if err != nil {
-		log.Printf("Failed to read from console :: %v", err)
+func NewChatClient(stream Services_ChatClient, name string) *ChatClient {
+	return &ChatClient{
+		stream:    stream,
+		name:      name,
+		timestamp: 0,
 	}
-	serverID = strings.Trim(serverID, "\r\n")
+}
 
-	log.Println("Connecting : " + serverID)
+func (c *ChatClient) updateTimestamp(serverTime int64) int64 {
+	for {
+		current := atomic.LoadInt64(&c.timestamp)
+		new := max(current, serverTime) + 1
+		if atomic.CompareAndSwapInt64(&c.timestamp, current, new) {
+			return new
+		}
+	}
+}
 
-	//connect to grpc server
-	conn, err := grpc.Dial(serverID, grpc.WithInsecure())
+func (c *ChatClient) joinChat() error {
+	timestamp := atomic.AddInt64(&c.timestamp, 1)
+	return c.stream.Send(&FromClient{
+		Name:      c.name,
+		Type:      MessageType_JOIN,
+		Timestamp: timestamp,
+	})
+}
 
+func (c *ChatClient) sendMessage(message string) error {
+	if len(message) > 128 {
+		return fmt.Errorf("message too long (max 128 characters)")
+	}
+
+	timestamp := atomic.AddInt64(&c.timestamp, 1)
+	return c.stream.Send(&FromClient{
+		Name:      c.name,
+		Body:      message,
+		Type:      MessageType_CHAT_MESSAGE,
+		Timestamp: timestamp,
+	})
+}
+
+func (c *ChatClient) receiveMessages() {
+	for {
+		msg, err := c.stream.Recv()
+		if err != nil {
+			log.Printf("Error receiving message: %v", err)
+			return
+		}
+
+		// Update local timestamp
+		c.updateTimestamp(msg.Timestamp)
+
+		// Log message with timestamp
+		switch msg.Type {
+		case MessageType_JOIN:
+			log.Printf("[T=%d] %s", msg.Timestamp, msg.Body)
+		case MessageType_LEAVE:
+			log.Printf("[T=%d] %s", msg.Timestamp, msg.Body)
+		case MessageType_CHAT_MESSAGE:
+			log.Printf("[T=%d] %s: %s", msg.Timestamp, msg.Name, msg.Body)
+		}
+	}
+}
+
+func main() {
+	// Get server address from user
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter server address (host:port): ")
+	serverAddr, _ := reader.ReadString('\n')
+	serverAddr = strings.TrimSpace(serverAddr)
+
+	// Connect to server
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("Faile to conncet to gRPC server :: %v", err)
+		log.Fatalf("Failed to connect: %v", err)
 	}
 	defer conn.Close()
 
-	//call ChatService to create a stream
-	client := chatserver.NewServicesClient(conn)
-
-	stream, err := client.ChatService(context.Background())
+	// Create chat service client
+	client := NewServicesClient(conn)
+	stream, err := client.Chat(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to call ChatService :: %v", err)
+		log.Fatalf("Failed to create chat stream: %v", err)
 	}
 
-	// implement communication with gRPC server
-	ch := clienthandle{stream: stream}
-	ch.clientConfig()
-	go ch.sendMessage()
-	go ch.receiveMessage()
+	// Get user's name
+	fmt.Print("Enter your name: ")
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
 
-	//blocker
-	bl := make(chan bool)
-	<-bl
+	// Create chat client
+	chatClient := NewChatClient(stream, name)
 
-}
-
-//clienthandle
-type clienthandle struct {
-	stream     chatserver.Services_ChatServiceClient
-	clientName string
-}
-
-func (ch *clienthandle) clientConfig() {
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("Your Name : ")
-	name, err := reader.ReadString('\n')
-	if err != nil {
-		log.Fatalf(" Failed to read from console :: %v", err)
+	// Join chat
+	if err := chatClient.joinChat(); err != nil {
+		log.Fatalf("Failed to join chat: %v", err)
 	}
-	ch.clientName = strings.Trim(name, "\r\n")
 
-}
+	// Start receiving messages in background
+	go chatClient.receiveMessages()
 
-//send message
-func (ch *clienthandle) sendMessage() {
-
-	// create a loop
+	// Handle user input
 	for {
-
-		reader := bufio.NewReader(os.Stdin)
-		clientMessage, err := reader.ReadString('\n')
+		message, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatalf(" Failed to read from console :: %v", err)
-		}
-		clientMessage = strings.Trim(clientMessage, "\r\n")
-
-		clientMessageBox := &chatserver.FromClient{
-			Name: ch.clientName,
-			Body: clientMessage,
+			log.Printf("Error reading input: %v", err)
+			break
 		}
 
-		err = ch.stream.Send(clientMessageBox)
-
-		if err != nil {
-			log.Printf("Error while sending message to server :: %v", err)
+		message = strings.TrimSpace(message)
+		if message == "/quit" {
+			break
 		}
 
+		if len(message) > 128 {
+			log.Printf("Error: message too long (max 128 characters)")
+			continue
+		}
+
+		if err := chatClient.sendMessage(message); err != nil {
+			log.Printf("Error sending message: %v", err)
+		}
 	}
-
-}
-
-//receive message
-func (ch *clienthandle) receiveMessage() {
-
-	//create a loop
-	for {
-		mssg, err := ch.stream.Recv()
-		if err != nil {
-			log.Printf("Error in receiving message from server :: %v", err)
-		}
-
-		//print message to console
-		fmt.Printf("%s : %s \n",mssg.Name,mssg.Body)
-		
-	}
-}
