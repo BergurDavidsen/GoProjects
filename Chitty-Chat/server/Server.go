@@ -18,7 +18,7 @@ type messageUnit struct {
     MessageUniqueCode int
     ClientUniqueCode  int
     IsSystemMessage   bool
-    Timestamp        string
+    Timestamp         string
 }
 
 // MessageHandle manages the message queue with thread-safe operations
@@ -34,6 +34,8 @@ const MaxMessageLength = 128
 // ChatServer implements the gRPC service
 type ChatServer struct {
     chatserver.UnimplementedServicesServer
+    clients map[chatserver.Services_ChatServiceServer]bool // Track connected clients
+    mu      sync.Mutex
 }
 
 // ChatService implements the bi-directional streaming RPC for chat
@@ -41,9 +43,15 @@ func (cs *ChatServer) ChatService(csi chatserver.Services_ChatServiceServer) err
     clientUniqueCode := rand.Intn(1e6)
     errch := make(chan error)
 
-    go receiveFromStream(csi, clientUniqueCode, errch)
-    go sendToStream(csi, clientUniqueCode, errch)
+    // Add client to the map
+    cs.mu.Lock()
+    cs.clients[csi] = true
+    cs.mu.Unlock()
 
+    go receiveFromStream(csi, clientUniqueCode, cs, errch) // Pass cs to receiveFromStream
+    go cs.sendToStream()
+
+    // Wait for error
     return <-errch
 }
 
@@ -53,7 +61,14 @@ func getCurrentTimestamp() string {
 }
 
 // receiveFromStream handles incoming messages from clients
-func receiveFromStream(csi chatserver.Services_ChatServiceServer, clientUniqueCode int, errch chan error) {
+func receiveFromStream(csi chatserver.Services_ChatServiceServer, clientUniqueCode int, chatServer *ChatServer, errch chan error) {
+    defer func() {
+        // Clean up the client when it disconnects
+        chatServer.mu.Lock()
+        delete(chatServer.clients, csi)
+        chatServer.mu.Unlock()
+    }()
+
     for {
         mssg, err := csi.Recv()
         if err != nil {
@@ -73,7 +88,7 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, clientUniqueCo
                 MessageUniqueCode: rand.Intn(1e8),
                 ClientUniqueCode:  clientUniqueCode,
                 IsSystemMessage:   true,
-                Timestamp:        timestamp,
+                Timestamp:         timestamp,
             }
             messageHandleObject.mu.Lock()
             messageHandleObject.MQue = append(messageHandleObject.MQue, errorMessage)
@@ -88,17 +103,17 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, clientUniqueCo
             MessageUniqueCode: rand.Intn(1e8),
             ClientUniqueCode:  clientUniqueCode,
             IsSystemMessage:   false,
-            Timestamp:        timestamp,
+            Timestamp:         timestamp,
         })
         log.Printf("[%s] Received message from %s: %s", timestamp, mssg.Name, mssg.Body)
         messageHandleObject.mu.Unlock()
     }
 }
 
-// sendToStream handles outgoing messages to clients
-func sendToStream(csi chatserver.Services_ChatServiceServer, clientUniqueCode int, errch chan error) {
+// sendToStream handles outgoing messages to all clients
+func (cs *ChatServer) sendToStream() {
     for {
-        time.Sleep(500 * time.Millisecond)
+        time.Sleep(500 * time.Millisecond) // Control message sending rate
 
         messageHandleObject.mu.Lock()
         if len(messageHandleObject.MQue) == 0 {
@@ -106,38 +121,33 @@ func sendToStream(csi chatserver.Services_ChatServiceServer, clientUniqueCode in
             continue
         }
 
+        // Get the next message to send
         currentMessage := messageHandleObject.MQue[0]
         messageHandleObject.mu.Unlock()
 
-        var err error
-        if currentMessage.IsSystemMessage && currentMessage.ClientUniqueCode == clientUniqueCode {
-            // Send system message only to the intended client
-            err = csi.Send(&chatserver.FromServer{
-                Name:           currentMessage.ClientName,
-                Body:           currentMessage.MessageBody,
-                IsSystemMessage: true,
-                Timestamp:      currentMessage.Timestamp,
-            })
-        } else if !currentMessage.IsSystemMessage && currentMessage.ClientUniqueCode != clientUniqueCode {
-            // Send regular message to all other clients
-            err = csi.Send(&chatserver.FromServer{
-                Name:           currentMessage.ClientName,
-                Body:           currentMessage.MessageBody,
-                IsSystemMessage: false,
-                Timestamp:      currentMessage.Timestamp,
-            })
+        // Prepare the message to send
+        serverMessage := &chatserver.FromServer{
+            Name:            currentMessage.ClientName,
+            Body:            currentMessage.MessageBody,
+            IsSystemMessage: currentMessage.IsSystemMessage,
+            Timestamp:       currentMessage.Timestamp,
         }
 
-        if err != nil {
-            errch <- err
-            continue
+        // Broadcast message to all clients
+        cs.mu.Lock()
+        for client := range cs.clients {
+            // Send the message to all clients
+            err := client.Send(serverMessage)
+            if err != nil {
+                log.Printf("Failed to send message to client: %v", err)
+                delete(cs.clients, client) // Remove the client if there's an error
+            }
         }
+        cs.mu.Unlock()
 
         // Remove the sent message from the queue
         messageHandleObject.mu.Lock()
-        if len(messageHandleObject.MQue) > 0 {
-            messageHandleObject.MQue = messageHandleObject.MQue[1:]
-        }
+        messageHandleObject.MQue = messageHandleObject.MQue[1:] // Remove the first message
         messageHandleObject.mu.Unlock()
     }
 }
@@ -161,7 +171,13 @@ func main() {
 
     // Create and start gRPC server
     grpcserver := grpc.NewServer()
-    chatserver.RegisterServicesServer(grpcserver, &ChatServer{})
+
+    // Initialize ChatServer with an empty clients map
+    chatServer := &ChatServer{
+        clients: make(map[chatserver.Services_ChatServiceServer]bool),
+    }
+
+    chatserver.RegisterServicesServer(grpcserver, chatServer)
 
     // Start serving
     if err := grpcserver.Serve(listen); err != nil {
