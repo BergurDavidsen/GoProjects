@@ -1,162 +1,122 @@
 package chatserver
 
 import (
-	"fmt"
 	"log"
+	"math/rand"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
-type Client struct {
-	id        string
-	name      string
-	stream    Services_ChatServer
-	timestamp int64
-	active    bool
+type messageUnit struct {
+	ClientName        string
+	MessageBody       string
+	MessageUniqueCode int
+	ClientUniqueCode  int
 }
+
+type messageHandle struct {
+	MQue []messageUnit
+	mu   sync.Mutex
+}
+
+var messageHandleObject = messageHandle{}
 
 type ChatServer struct {
-	clients    map[string]*Client
-	mu         sync.RWMutex
-	timestamp  int64 // Server's Lamport timestamp
 }
 
-func NewChatServer() *ChatServer {
-	return &ChatServer{
-		clients: make(map[string]*Client),
-	}
+//define ChatService
+func (is *ChatServer) ChatService(csi Services_ChatServiceServer) error {
+
+	clientUniqueCode := rand.Intn(1e6)
+	errch := make(chan error)
+
+	// receive messages - init a go routine
+	go receiveFromStream(csi, clientUniqueCode, errch)
+
+	// send messages - init a go routine
+	go sendToStream(csi, clientUniqueCode, errch)
+
+	return <-errch
+
 }
 
-// updateTimestamp updates the server's Lamport timestamp
-func (s *ChatServer) updateTimestamp(clientTime int64) int64 {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.timestamp = max(s.timestamp, clientTime) + 1
-	return s.timestamp
-}
+//receive messages
+func receiveFromStream(csi_ Services_ChatServiceServer, clientUniqueCode_ int, errch_ chan error) {
 
-// broadcastMessage sends a message to all connected clients
-func (s *ChatServer) broadcastMessage(msg *FromServer, skipClient string) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	//implement a loop
+	for {
+		mssg, err := csi_.Recv()
+		if err != nil {
+			log.Printf("Error in receiving message from client :: %v", err)
+			errch_ <- err
+		} else {
 
-	for id, client := range s.clients {
-		if id == skipClient || !client.active {
+			messageHandleObject.mu.Lock()
+
+			messageHandleObject.MQue = append(messageHandleObject.MQue, messageUnit{
+				ClientName:        mssg.Name,
+				MessageBody:       mssg.Body,
+				MessageUniqueCode: rand.Intn(1e8),
+				ClientUniqueCode:  clientUniqueCode_,
+			})
+			
+			log.Printf("%v", messageHandleObject.MQue[len(messageHandleObject.MQue)-1])
+			
+			messageHandleObject.mu.Unlock()
+
+			
+
 		}
-
-		if err := client.stream.Send(msg); err != nil {
-			log.Printf("Failed to send message to client %s: %v", id, err)
-			client.active = false
-		}
 	}
 }
 
-// Chat implements the ChatService
-func (s *ChatServer) Chat(stream Services_ChatServer) error {
-	// Generate unique client ID
-	clientID := generateUniqueID()
+//send message
+func sendToStream(csi_ Services_ChatServiceServer, clientUniqueCode_ int, errch_ chan error) {
 
-	// Initialize client structure
-	client := &Client{
-		id:     clientID,
-		stream: stream,
-		active: true,
-	}
+	//implement a loop
+	for {
 
-	// First message must be a JOIN
-	initialMsg, err := stream.Recv()
-	if err != nil {
-		return fmt.Errorf("failed to receive initial message: %v", err)
-	}
-
-	if initialMsg.Type != MessageType_JOIN {
-		return fmt.Errorf("first message must be JOIN")
-	}
-
-	// Store client information
-	client.name = initialMsg.Name
-	s.mu.Lock()
-	s.clients[clientID] = client
-	s.mu.Unlock()
-
-	// Broadcast join message
-	timestamp := s.updateTimestamp(initialMsg.Timestamp)
-	joinMsg := &FromServer{
-		ClientId:  clientID,
-		Name:      initialMsg.Name,
-		Body:      fmt.Sprintf("Participant %s joined Chitty-Chat", initialMsg.Name),
-		Timestamp: timestamp,
-		Type:      MessageType_JOIN,
-	}
-	s.broadcastMessage(joinMsg, "")
-
-	// Handle incoming messages
-	go func() {
+		//loop through messages in MQue
 		for {
-			msg, err := stream.Recv()
-			if err != nil {
-				log.Printf("Error receiving message from client %s: %v", clientID, err)
-				s.handleClientDisconnect(clientID)		continue
 
-				return
+			time.Sleep(500 * time.Millisecond)
+
+			messageHandleObject.mu.Lock()
+
+			if len(messageHandleObject.MQue) == 0 {
+				messageHandleObject.mu.Unlock()
+				break
 			}
 
-			// Validate message length
-			if len(msg.Body) > 128 {
-				log.Printf("Message from client %s exceeded maximum length", clientID)
-				continue
+			senderUniqueCode := messageHandleObject.MQue[0].ClientUniqueCode
+			senderName4Client := messageHandleObject.MQue[0].ClientName
+			message4Client := messageHandleObject.MQue[0].MessageBody
+
+			messageHandleObject.mu.Unlock()
+
+			//send message to designated client (do not send to the same client)
+			if senderUniqueCode != clientUniqueCode_ {
+
+				err := csi_.Send(&FromServer{Name: senderName4Client, Body: message4Client})
+
+				if err != nil {
+					errch_ <- err
+				}
+
+				messageHandleObject.mu.Lock()
+
+				if len(messageHandleObject.MQue) > 1 {
+					messageHandleObject.MQue = messageHandleObject.MQue[1:] // delete the message at index 0 after sending to receiver
+				} else {
+					messageHandleObject.MQue = []messageUnit{}
+				}
+
+				messageHandleObject.mu.Unlock()
+
 			}
 
-			// Update Lamport timestamp and broadcast
-			timestamp := s.updateTimestamp(msg.Timestamp)
-			broadcastMsg := &FromServer{
-				ClientId:  clientID,
-				Name:      msg.Name,
-				Body:      msg.Body,
-				Timestamp: timestamp,
-				Type:      msg.Type,
-			}
-			s.broadcastMessage(broadcastMsg, "")
 		}
-	}()
 
-	// Keep the stream alive
-	select {}
-}
-
-func (s *ChatServer) handleClientDisconnect(clientID string) {
-	s.mu.Lock()
-	client, exists := s.clients[clientID]
-	if exists {
-		client.active = false
-		delete(s.clients, clientID)
-	}
-	s.mu.Unlock()
-
-	if exists {
-		timestamp := atomic.AddInt64(&s.timestamp, 1)
-		leaveMsg := &FromServer{
-			ClientId:  clientID,
-			Name:      client.name,
-			Body:      fmt.Sprintf("Participant %s left Chitty-Chat", client.name),
-			Timestamp: timestamp,
-			Type:      MessageType_LEAVE,
-		}
-		s.broadcastMessage(leaveMsg, clientID)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
-
-// Helper function to generate unique ID
-func generateUniqueID() string {
-	// Implementation using UUID or other unique ID generator
-	return fmt.Sprintf("client-%d", time.Now().UnixNano())
-}
-
-func max(a, b int64) int64 {
-	if a > b {
-		return a
-	}
-	return b
-}
-//hell

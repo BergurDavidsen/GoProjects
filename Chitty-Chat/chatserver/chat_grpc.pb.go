@@ -14,46 +14,45 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// ChatServiceClient is the client API for ChatService service.
+// ServicesClient is the client API for Services service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ChatServiceClient interface {
-	// Bidirectional streaming RPC for chat messages
-	Chat(ctx context.Context, opts ...grpc.CallOption) (ChatService_ChatClient, error)
+type ServicesClient interface {
+	ChatService(ctx context.Context, opts ...grpc.CallOption) (Services_ChatServiceClient, error)
 }
 
-type chatServiceClient struct {
+type servicesClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewChatServiceClient(cc grpc.ClientConnInterface) ChatServiceClient {
-	return &chatServiceClient{cc}
+func NewServicesClient(cc grpc.ClientConnInterface) ServicesClient {
+	return &servicesClient{cc}
 }
 
-func (c *chatServiceClient) Chat(ctx context.Context, opts ...grpc.CallOption) (ChatService_ChatClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], "/chatserver.ChatService/Chat", opts...)
+func (c *servicesClient) ChatService(ctx context.Context, opts ...grpc.CallOption) (Services_ChatServiceClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Services_ServiceDesc.Streams[0], "/chatserver.Services/ChatService", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &chatServiceChatClient{stream}
+	x := &servicesChatServiceClient{stream}
 	return x, nil
 }
 
-type ChatService_ChatClient interface {
+type Services_ChatServiceClient interface {
 	Send(*FromClient) error
 	Recv() (*FromServer, error)
 	grpc.ClientStream
 }
 
-type chatServiceChatClient struct {
+type servicesChatServiceClient struct {
 	grpc.ClientStream
 }
 
-func (x *chatServiceChatClient) Send(m *FromClient) error {
+func (x *servicesChatServiceClient) Send(m *FromClient) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *chatServiceChatClient) Recv() (*FromServer, error) {
+func (x *servicesChatServiceClient) Recv() (*FromServer, error) {
 	m := new(FromServer)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -61,54 +60,51 @@ func (x *chatServiceChatClient) Recv() (*FromServer, error) {
 	return m, nil
 }
 
-// ChatServiceServer is the server API for ChatService service.
-// All implementations must embed UnimplementedChatServiceServer
+// ServicesServer is the server API for Services service.
+// All implementations should embed UnimplementedServicesServer
 // for forward compatibility
-type ChatServiceServer interface {
-	// Bidirectional streaming RPC for chat messages
-	Chat(ChatService_ChatServer) error
-	mustEmbedUnimplementedChatServiceServer()
+type ServicesServer interface {
+	ChatService(Services_ChatServiceServer) error
 }
 
-// UnimplementedChatServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedChatServiceServer struct {
+// UnimplementedServicesServer should be embedded to have forward compatible implementations.
+type UnimplementedServicesServer struct {
 }
 
-func (UnimplementedChatServiceServer) Chat(ChatService_ChatServer) error {
-	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+func (UnimplementedServicesServer) ChatService(Services_ChatServiceServer) error {
+	return status.Errorf(codes.Unimplemented, "method ChatService not implemented")
 }
-func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 
-// UnsafeChatServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ChatServiceServer will
+// UnsafeServicesServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ServicesServer will
 // result in compilation errors.
-type UnsafeChatServiceServer interface {
-	mustEmbedUnimplementedChatServiceServer()
+type UnsafeServicesServer interface {
+	mustEmbedUnimplementedServicesServer()
 }
 
-func RegisterChatServiceServer(s grpc.ServiceRegistrar, srv ChatServiceServer) {
-	s.RegisterService(&ChatService_ServiceDesc, srv)
+func RegisterServicesServer(s grpc.ServiceRegistrar, srv ServicesServer) {
+	s.RegisterService(&Services_ServiceDesc, srv)
 }
 
-func _ChatService_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ChatServiceServer).Chat(&chatServiceChatServer{stream})
+func _Services_ChatService_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ServicesServer).ChatService(&servicesChatServiceServer{stream})
 }
 
-type ChatService_ChatServer interface {
+type Services_ChatServiceServer interface {
 	Send(*FromServer) error
 	Recv() (*FromClient, error)
 	grpc.ServerStream
 }
 
-type chatServiceChatServer struct {
+type servicesChatServiceServer struct {
 	grpc.ServerStream
 }
 
-func (x *chatServiceChatServer) Send(m *FromServer) error {
+func (x *servicesChatServiceServer) Send(m *FromServer) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *chatServiceChatServer) Recv() (*FromClient, error) {
+func (x *servicesChatServiceServer) Recv() (*FromClient, error) {
 	m := new(FromClient)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -116,17 +112,17 @@ func (x *chatServiceChatServer) Recv() (*FromClient, error) {
 	return m, nil
 }
 
-// ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
+// Services_ServiceDesc is the grpc.ServiceDesc for Services service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ChatService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "chatserver.ChatService",
-	HandlerType: (*ChatServiceServer)(nil),
+var Services_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "chatserver.Services",
+	HandlerType: (*ServicesServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Chat",
-			Handler:       _ChatService_Chat_Handler,
+			StreamName:    "ChatService",
+			Handler:       _Services_ChatService_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
