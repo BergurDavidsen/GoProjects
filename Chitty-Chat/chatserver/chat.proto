@@ -9,6 +9,7 @@ message FromClient {
     string body = 2;
     uint64 timestamp = 3;
     uint32 LamportTimestamp = 4;
+    bool isSystemMessage = 5; // To distinguish system messages (like error notifications)
 }
 
 message FromServer {

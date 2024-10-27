@@ -46,16 +46,19 @@ type ChatServer struct {
 
 // ChatService implements the bi-directional streaming RPC for chat
 func (cs *ChatServer) ChatService(csi chatserver.Services_ChatServiceServer) error {
-	clientUniqueCode := rand.Intn(1e6)
 	errch := make(chan error)
 
 	// Add client to the map
 	cs.mu.Lock()
+	LamportTimestamp++
+	log.Printf("Participant %s joined Chitty-Chat at Lamport time %d", csi.Context().Value("name"), LamportTimestamp)
 	cs.clients[csi] = true
 	cs.mu.Unlock()
 
-	go receiveFromStream(csi, clientUniqueCode, cs, errch) // Pass cs to receiveFromStream
+	go receiveFromStream(csi, cs, errch) // Pass cs to receiveFromStream
 	go cs.sendToStream()
+
+
 
 	// Wait for error
 	return <-errch
@@ -68,7 +71,7 @@ func getCurrentTimestamp() string {
 }
 
 // receiveFromStream handles incoming messages from clients
-func receiveFromStream(csi chatserver.Services_ChatServiceServer, clientUniqueCode int, chatServer *ChatServer, errch chan error) {
+func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *ChatServer, errch chan error) {
 	defer func() {
 		// Clean up the client when it disconnects
 		chatServer.mu.Lock()
@@ -119,7 +122,7 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, clientUniqueCo
 			Timestamp:         timestamp,
 			LamportTimestamp:  LamportTimestamp,
 		})
-		log.Printf("[%s] Received message from %s: %s Lamport Timestamp: %d", timestamp, mssg.Name, mssg.Body, LamportTimestamp)
+		log.Printf("{%d}[%s] Received message from %s: %s", LamportTimestamp, timestamp, mssg.Name, mssg.Body)
 		messageHandleObject.mu.Unlock()
 	}
 }

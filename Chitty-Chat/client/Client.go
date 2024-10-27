@@ -8,72 +8,29 @@ import (
 	"log"
 	"os"
 	"strings"
+	"math/rand"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func main() {
+var LamportTimestamp uint32 = 0
 
-	fmt.Println("Enter Server IP:Port ::: ")
-	reader := bufio.NewReader(os.Stdin)
-	serverID, err := reader.ReadString('\n')
 
-	if err != nil {
-		log.Printf("Failed to read from console :: %v", err)
-	}
-	serverID = strings.Trim(serverID, "\r\n")
 
-	log.Println("Connecting : " + serverID)
-	//connect to grpc server
-	conn, err := grpc.NewClient(serverID, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
-	if err != nil {
-		log.Fatalf("Faile to conncet to gRPC server :: %v", err)
-	}
-	defer conn.Close()
-
-	//call ChatService to create a stream
-	client := chatserver.NewServicesClient(conn)
-
-	stream, err := client.ChatService(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to call ChatService :: %v", err)
-		return
-	}
-
-	// implement communication with gRPC server
-	ch := clienthandle{stream: stream}
-	ch.clientConfig()
-	go ch.sendMessage()
-	go ch.receiveMessage()
-
-	//blocker
-	bl := make(chan bool)
-	<-bl
-
-}
-
-// clienthandle
-type clienthandle struct {
+// ClientHandle
+type ClientHandle struct {
 	stream     chatserver.Services_ChatServiceClient
-	clientName string
+	config 	   Config
 }
 
-func (ch *clienthandle) clientConfig() {
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("Your Name : ")
-	name, err := reader.ReadString('\n')
-	if err != nil {
-		log.Fatalf(" Failed to read from console :: %v", err)
-	}
-	ch.clientName = strings.Trim(name, "\r\n")
-
+type Config struct {
+	clientName string
+	clientId int
 }
 
 // send message
-func (ch *clienthandle) sendMessage() {
+func (ch *ClientHandle) sendMessage() {
 
 	// create a loop
 	for {
@@ -85,9 +42,13 @@ func (ch *clienthandle) sendMessage() {
 		}
 		clientMessage = strings.Trim(clientMessage, "\r\n")
 
+		
+		LamportTimestamp++
+
 		clientMessageBox := &chatserver.FromClient{
-			Name: ch.clientName,
+			Name: ch.config.clientName,
 			Body: clientMessage,
+			LamportTimestamp: LamportTimestamp,
 		}
 
 		err = ch.stream.Send(clientMessageBox)
@@ -102,19 +63,100 @@ func (ch *clienthandle) sendMessage() {
 
 //receive message
 
-func (ch *clienthandle) receiveMessage() {
+func (ch *ClientHandle) receiveMessage() {
 	for {
 		mssg, err := ch.stream.Recv()
 		if err != nil {
 			log.Printf("Error in receiving message from server :: %v", err)
 			continue
 		}
+		
+		LamportTimestamp = (max(mssg.LamportTimestamp, LamportTimestamp) + 1)
 
 		// Display messages with timestamps
 		if mssg.IsSystemMessage {
-			fmt.Printf("Lamport Timestamp{%d} [%s] 🔔 System: %s\n", mssg.LamportTimestamp, mssg.Timestamp, mssg.Body)
+			fmt.Printf("{%d} [%s] 🔔 System: %s\n", LamportTimestamp, mssg.Timestamp, mssg.Body)
 		} else {
-			fmt.Printf("Lamport Timestamp{%d} [%s] %s: %s\n", mssg.LamportTimestamp, mssg.Timestamp, mssg.Name, mssg.Body)
+			fmt.Printf("{%d} [%s] %s: %s\n", LamportTimestamp, mssg.Timestamp, mssg.Name, mssg.Body)
 		}
 	}
+}
+
+/*
+func (ch *ClientHandle) join(){
+	LamportTimestamp++
+
+	clientMessageBox := &chatserver.FromClient{
+		Name: ch.clientName,
+		LamportTimestamp: LamportTimestamp,
+		
+	}
+
+	err := ch.stream.Send(clientMessageBox)
+
+	if err != nil {
+		log.Printf("Error while sending message to server :: %v", err)
+	}
+}
+*/
+
+func (ch *ClientHandle) sync(){
+
+}
+
+func (ch *ClientHandle) clientConfig() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("Your Name : ")
+	name, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatalf(" Failed to read from console :: %v", err)
+	}
+	ch.config.clientName = strings.Trim(name, "\r\n")
+	ch.config.clientId = rand.Intn(1e6)
+
+}
+
+func main() {
+	// configure client
+	ch := ClientHandle{}
+	ch.clientConfig()
+
+	// enter localhost
+	fmt.Println("Enter Server IP:Port ::: ")
+	reader := bufio.NewReader(os.Stdin)
+	serverID, err := reader.ReadString('\n')
+	if err != nil {
+		log.Printf("Failed to read from console :: %v", err)
+	}
+	serverID = strings.Trim(serverID, "\r\n")
+	log.Println("Connecting : " + serverID)
+
+	//connect to grpc server
+	conn, err := grpc.NewClient(serverID, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Faile to conncet to gRPC server :: %v", err)
+	}
+	defer conn.Close()
+
+	//call ChatService to create a stream
+	client := chatserver.NewServicesClient(conn)
+	
+	ctx := context.WithValue(context.Background(), "config", ch.config)
+
+	// add stream to ClientHandle
+	stream, err := client.ChatService(ctx)
+	if err != nil {
+		log.Fatalf("Failed to call ChatService :: %v", err)
+		return
+	}
+	ch.stream = stream
+
+	// implement communication with gRPC server
+	go ch.sendMessage()
+	go ch.receiveMessage()
+
+	//blocker
+	bl := make(chan bool)
+	<-bl
+
 }
