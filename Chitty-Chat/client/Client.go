@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -24,9 +25,8 @@ func main() {
 	serverID = strings.Trim(serverID, "\r\n")
 
 	log.Println("Connecting : " + serverID)
-
 	//connect to grpc server
-	conn, err := grpc.Dial(serverID, grpc.WithInsecure())
+	conn, err := grpc.NewClient(serverID, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
 		log.Fatalf("Faile to conncet to gRPC server :: %v", err)
@@ -39,6 +39,7 @@ func main() {
 	stream, err := client.ChatService(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to call ChatService :: %v", err)
+		return
 	}
 
 	// implement communication with gRPC server
@@ -53,7 +54,7 @@ func main() {
 
 }
 
-//clienthandle
+// clienthandle
 type clienthandle struct {
 	stream     chatserver.Services_ChatServiceClient
 	clientName string
@@ -69,10 +70,9 @@ func (ch *clienthandle) clientConfig() {
 	}
 	ch.clientName = strings.Trim(name, "\r\n")
 
-
 }
 
-//send message
+// send message
 func (ch *clienthandle) sendMessage() {
 
 	// create a loop
@@ -103,18 +103,18 @@ func (ch *clienthandle) sendMessage() {
 //receive message
 
 func (ch *clienthandle) receiveMessage() {
-    for {
-        mssg, err := ch.stream.Recv()
-        if err != nil {
-            log.Printf("Error in receiving message from server :: %v", err)
-            continue
-        }
+	for {
+		mssg, err := ch.stream.Recv()
+		if err != nil {
+			log.Printf("Error in receiving message from server :: %v", err)
+			continue
+		}
 
-        // Display messages with timestamps
-        if mssg.IsSystemMessage {
-            fmt.Printf("[%s] 🔔 System: %s\n", mssg.Timestamp, mssg.Body)
-        } else {
-            fmt.Printf("[%s] %s: %s\n", mssg.Timestamp, mssg.Name, mssg.Body)
-        }
-    }
+		// Display messages with timestamps
+		if mssg.IsSystemMessage {
+			fmt.Printf("Lamport Timestamp{%d} [%s] 🔔 System: %s\n", mssg.LamportTimestamp, mssg.Timestamp, mssg.Body)
+		} else {
+			fmt.Printf("Lamport Timestamp{%d} [%s] %s: %s\n", mssg.LamportTimestamp, mssg.Timestamp, mssg.Name, mssg.Body)
+		}
+	}
 }

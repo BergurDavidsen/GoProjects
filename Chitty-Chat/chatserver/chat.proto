@@ -8,13 +8,15 @@ message FromClient {
     string name = 1;
     string body = 2;
     uint64 timestamp = 3;
+    uint32 LamportTimestamp = 4;
 }
 
 message FromServer {
     string name = 1;
     string body = 2;
     bool isSystemMessage = 3;  // To distinguish system messages (like error notifications)
-    string timestamp = 4; //lamport timestamp
+    string timestamp = 4; 
+    uint32 LamportTimestamp = 5;
 }
 
 service Services {
