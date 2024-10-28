@@ -15,11 +15,10 @@
 ``` bash 
 $ go run server/server.go
 ```  
-1.3 You must enter a port you want to connect to in the terminal (preferable a port not in use like 5000).  
+1.3 This will by default start the server on port 5001. If you want to change it, run:
 ```bash
-$ localhost:5000
-``` 
-1.4 The server is now open.
+$ export PORT=<YOUR DESIRED PORT>
+```
 
 #### 2. Run a client  
 #### **For each Client you must open a new terminal**  
@@ -28,8 +27,22 @@ $ localhost:5000
 ``` bash
 $ go run client/client.go
 ```
-1.3 You must enter the same port as the server is connected to e.g
+2.3 Enter your name in when prompted. This is the name that will be used in the chat. E.g:
+```bash
+$ name: <YOUR NAME>
+```
+
+2.4 You must enter the same port as the server is connected to e.g
 
 ```bash
-$ localhost:5000
+$ localhost:5001
 ```
+2.5 Now you can chat to all other connected clients
+
+#### 3. Leave the chat
+3.1 To leave the chat, simply terminate the program with:
+```bash
+ctrl+c
+```
+
+
