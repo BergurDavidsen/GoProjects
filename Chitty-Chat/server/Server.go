@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -54,7 +55,6 @@ func (cs *ChatServer) ChatService(csi chatserver.Services_ChatServiceServer) err
 
 	// Add client to the map
 	cs.mu.Lock()
-	LamportTimestamp = LamportTimestamp + 1
 
 	// Retrieve metadata from the incoming context
 	md, ok := metadata.FromIncomingContext(csi.Context())
@@ -64,9 +64,18 @@ func (cs *ChatServer) ChatService(csi chatserver.Services_ChatServiceServer) err
 		cs.clientMetaData[csi] = md
 		clientName := md["clientname"] // Metadata keys are lowercase
 		clientId := md["clientid"]
+		clientLamportTimestamp := md["lamport"]
+		clientLamportTimestampInt, err := strconv.ParseUint(clientLamportTimestamp[0], 10, 32)
+
+		if err != nil {
+			log.Println("Error converting lamport timestamp to int")
+		}
+
+		LamportTimestamp = max(LamportTimestamp, uint32(clientLamportTimestampInt)) + 1
+
 		if len(clientName) > 0 {
 			message := messageUnit{
-				MessageBody:       fmt.Sprintf("Participant %s joined Chitty-Chat at Lamport time %d", clientName[0], LamportTimestamp),
+				MessageBody:       fmt.Sprintf("Participant %s joined Chitty-Chat at Lamport time %d\n", clientName[0], LamportTimestamp),
 				MessageUniqueCode: rand.Intn(1e8),
 				ClientUniqueCode:  clientId[0],
 				IsSystemMessage:   true,
@@ -113,7 +122,7 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *Ch
 			LamportTimestamp++
 			disconnectMessage := messageUnit{
 				ClientName:       chatServer.clientMetaData[csi]["clientname"][0],
-				MessageBody:      fmt.Sprintf("Participant %s left Chitty-Chat at Lamport time %d", chatServer.clientMetaData[csi]["clientname"][0], LamportTimestamp),
+				MessageBody:      fmt.Sprintf("Participant %s left Chitty-Chat at Lamport time %d\n", chatServer.clientMetaData[csi]["clientname"][0], LamportTimestamp),
 				Timestamp:        getCurrentTimestamp(),
 				LamportTimestamp: LamportTimestamp,
 				IsSystemMessage:  true,
@@ -136,7 +145,7 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *Ch
 			log.Printf("[%s] Client %s exceeded message length limit", timestamp, mssg.Name)
 			errorMessage := messageUnit{
 				ClientName:        "System",
-				MessageBody:       "Exceeded character limit of 128, please write a smaller message",
+				MessageBody:       fmt.Sprintf("Exceeded character limit of 128, please write a smaller message at Lamport time %d", LamportTimestamp),
 				MessageUniqueCode: rand.Intn(1e8),
 				ClientUniqueCode:  chatServer.clientMetaData[csi]["clientid"][0],
 				IsSystemMessage:   true,
@@ -160,7 +169,7 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *Ch
 			Timestamp:         timestamp,
 			LamportTimestamp:  LamportTimestamp,
 		})
-		log.Printf("{%d}[%s] Received message from %s: %s", LamportTimestamp, timestamp, mssg.Name, mssg.Body)
+		log.Printf("[%s] Received message from %s at Lamport time %d: %s", timestamp, mssg.Name, LamportTimestamp, mssg.Body)
 		messageHandleObject.mu.Unlock()
 	}
 }
@@ -204,7 +213,7 @@ func (cs *ChatServer) sendToStream() {
 				log.Printf("Failed to send message to client: %v", err)
 				delete(cs.clients, client) // Remove the client if there's an error
 			}
-			LamportTimestamp++ //Last increment sync with the client
+
 		}
 
 		cs.mu.Unlock()

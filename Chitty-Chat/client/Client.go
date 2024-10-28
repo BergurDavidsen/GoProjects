@@ -52,6 +52,8 @@ func (ch *ClientHandle) sendMessage() {
 			log.Printf("Error while sending message to server :: %v", err)
 		}
 
+		fmt.Printf("You sent:%+v\n", clientMessageBox.Body)
+
 	}
 
 }
@@ -68,9 +70,9 @@ func (ch *ClientHandle) receiveMessage() {
 		// Display messages with timestamps
 		LamportTimestamp = (max(mssg.LamportTimestamp, LamportTimestamp) + 1)
 		if mssg.IsSystemMessage {
-			fmt.Printf("[%s]🔔 System:\nLocal Lamport Time {%d}\nMessag:%s\n", mssg.Timestamp, LamportTimestamp, mssg.Body)
+			fmt.Printf("[%s] {%d}\n🔔 System: %s\n", mssg.Timestamp, LamportTimestamp, mssg.Body)
 		} else {
-			fmt.Printf("[%s]\nLocal Lamport Time{%d}\nUser:%s\nmessage:%s\n", mssg.Timestamp, LamportTimestamp, mssg.Name, mssg.Body)
+			fmt.Printf("\n[%s] {%d}\n%s:%s\n", mssg.Timestamp, LamportTimestamp, mssg.Name, mssg.Body)
 		}
 
 	}
@@ -127,13 +129,14 @@ func main() {
 		log.Fatalf("Faile to conncet to gRPC server :: %v", err)
 	}
 	defer conn.Close()
+	LamportTimestamp++
 
 	//call ChatService to create a stream
 	client := chatserver.NewServicesClient(conn)
 
 	// add metadata to the context
 	md := metadata.Pairs("clientId", strconv.Itoa(ch.clientId),
-		"clientName", ch.clientName)
+		"clientName", ch.clientName, "Lamport", strconv.FormatUint(uint64(LamportTimestamp), 10))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	// add stream to ClientHandle
@@ -142,9 +145,7 @@ func main() {
 		log.Fatalf("Failed to call ChatService :: %v", err)
 		return
 	}
-	LamportTimestamp++
 	ch.stream = stream
-
 	// implement communication with gRPC server
 	go ch.sendMessage()
 	go ch.receiveMessage()
