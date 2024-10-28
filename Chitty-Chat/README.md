@@ -40,9 +40,7 @@ $ localhost:5001
 2.5 Now you can chat to all other connected clients
 
 #### 3. Leave the chat
-3.1 To leave the chat, simply terminate the program with:
-```bash
-ctrl+c
-```
+3.1 To leave the chat, simply terminate the program with: `ctrl+c`
+
 
 
