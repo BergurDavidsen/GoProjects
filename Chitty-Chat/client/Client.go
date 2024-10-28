@@ -69,9 +69,9 @@ func (ch *ClientHandle) receiveMessage() {
 		// Display messages with timestamps
 		LamportTimestamp = (max(mssg.LamportTimestamp, LamportTimestamp) + 1)
 		if mssg.IsSystemMessage {
-			fmt.Printf("{%d} [%s] 🔔 System: %s\n", LamportTimestamp, mssg.Timestamp, mssg.Body)
+			fmt.Printf("[%s]🔔 System:\nLocal Lamport Time {%d}\nMessag:%s\n", mssg.Timestamp, LamportTimestamp, mssg.Body)
 		} else {
-			fmt.Printf("{%d} [%s] %s: %s\n", LamportTimestamp, mssg.Timestamp, mssg.Name, mssg.Body)
+			fmt.Printf("[%s]\nLocal Lamport Time{%d}\nUser:%s\nmessage:%s\n", mssg.Timestamp, LamportTimestamp, mssg.Name, mssg.Body)
 		}
 
 	}

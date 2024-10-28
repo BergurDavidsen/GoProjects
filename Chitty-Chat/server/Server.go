@@ -54,7 +54,7 @@ func (cs *ChatServer) ChatService(csi chatserver.Services_ChatServiceServer) err
 
 	// Add client to the map
 	cs.mu.Lock()
-	LamportTimestamp++
+	LamportTimestamp = LamportTimestamp + 1
 
 	// Retrieve metadata from the incoming context
 	md, ok := metadata.FromIncomingContext(csi.Context())
@@ -110,6 +110,18 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *Ch
 		mssg, err := csi.Recv()
 		if err != nil {
 			log.Printf("Error in receiving message from client: %v", err)
+			LamportTimestamp++
+			disconnectMessage := messageUnit{
+				ClientName:       chatServer.clientMetaData[csi]["clientname"][0],
+				MessageBody:      fmt.Sprintf("Participant %s left Chitty-Chat at Lamport time %d", chatServer.clientMetaData[csi]["clientname"][0], LamportTimestamp),
+				Timestamp:        getCurrentTimestamp(),
+				LamportTimestamp: LamportTimestamp,
+				IsSystemMessage:  true,
+			}
+			log.Printf(disconnectMessage.MessageBody)
+			messageHandleObject.mu.Lock()
+			messageHandleObject.MQue = append(messageHandleObject.MQue, disconnectMessage)
+			messageHandleObject.mu.Unlock()
 			errch <- err
 			return
 		}
@@ -180,10 +192,10 @@ func (cs *ChatServer) sendToStream() {
 		// Broadcast message to all clients
 		cs.mu.Lock()
 		for client := range cs.clients {
-			LamportTimestamp++ // Increment Lamport timestamp before sending the message
 			if currentMessage.ClientUniqueCode == cs.clientMetaData[client]["clientid"][0] && !currentMessage.IsSystemMessage {
 				continue // Skip sending the message to the client who sent it
 			}
+			LamportTimestamp++ // Increment Lamport timestamp before sending the message
 			// Send the message to all clients
 
 			serverMessage.LamportTimestamp = LamportTimestamp
