@@ -6,27 +6,24 @@ import (
 	"fmt"
 	"grpcChatServer/chatserver"
 	"log"
-	"os"
-	"strings"
 	"math/rand"
+	"os"
+	"strconv"
+	"strings"
+
+	"google.golang.org/grpc/metadata"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var LamportTimestamp uint32 = 0
-
-
+var LamportTimestamp uint32 = 1
 
 // ClientHandle
 type ClientHandle struct {
 	stream     chatserver.Services_ChatServiceClient
-	config 	   Config
-}
-
-type Config struct {
 	clientName string
-	clientId int
+	clientId   int
 }
 
 // send message
@@ -42,12 +39,11 @@ func (ch *ClientHandle) sendMessage() {
 		}
 		clientMessage = strings.Trim(clientMessage, "\r\n")
 
-		
 		LamportTimestamp++
 
 		clientMessageBox := &chatserver.FromClient{
-			Name: ch.config.clientName,
-			Body: clientMessage,
+			Name:             ch.clientName,
+			Body:             clientMessage,
 			LamportTimestamp: LamportTimestamp,
 		}
 
@@ -70,15 +66,14 @@ func (ch *ClientHandle) receiveMessage() {
 			log.Printf("Error in receiving message from server :: %v", err)
 			continue
 		}
-		
-		LamportTimestamp = (max(mssg.LamportTimestamp, LamportTimestamp) + 1)
-
 		// Display messages with timestamps
+		LamportTimestamp = (max(mssg.LamportTimestamp, LamportTimestamp) + 1)
 		if mssg.IsSystemMessage {
 			fmt.Printf("{%d} [%s] 🔔 System: %s\n", LamportTimestamp, mssg.Timestamp, mssg.Body)
 		} else {
 			fmt.Printf("{%d} [%s] %s: %s\n", LamportTimestamp, mssg.Timestamp, mssg.Name, mssg.Body)
 		}
+
 	}
 }
 
@@ -89,7 +84,7 @@ func (ch *ClientHandle) join(){
 	clientMessageBox := &chatserver.FromClient{
 		Name: ch.clientName,
 		LamportTimestamp: LamportTimestamp,
-		
+
 	}
 
 	err := ch.stream.Send(clientMessageBox)
@@ -100,10 +95,6 @@ func (ch *ClientHandle) join(){
 }
 */
 
-func (ch *ClientHandle) sync(){
-
-}
-
 func (ch *ClientHandle) clientConfig() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("Your Name : ")
@@ -111,8 +102,8 @@ func (ch *ClientHandle) clientConfig() {
 	if err != nil {
 		log.Fatalf(" Failed to read from console :: %v", err)
 	}
-	ch.config.clientName = strings.Trim(name, "\r\n")
-	ch.config.clientId = rand.Intn(1e6)
+	ch.clientName = strings.Trim(name, "\r\n")
+	ch.clientId = rand.Intn(1e6)
 
 }
 
@@ -140,8 +131,11 @@ func main() {
 
 	//call ChatService to create a stream
 	client := chatserver.NewServicesClient(conn)
-	
-	ctx := context.WithValue(context.Background(), "config", ch.config)
+
+	// add metadata to the context
+	md := metadata.Pairs("clientId", strconv.Itoa(ch.clientId),
+		"clientName", ch.clientName)
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	// add stream to ClientHandle
 	stream, err := client.ChatService(ctx)

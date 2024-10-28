@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"grpcChatServer/chatserver"
 	"log"
 	"math/rand"
@@ -8,6 +9,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"google.golang.org/grpc"
 )
@@ -19,7 +22,7 @@ type messageUnit struct {
 	ClientName        string
 	MessageBody       string
 	MessageUniqueCode int
-	ClientUniqueCode  int
+	ClientUniqueCode  string
 	IsSystemMessage   bool
 	Timestamp         string
 	LamportTimestamp  uint32
@@ -33,15 +36,16 @@ type messageHandle struct {
 
 // Global variables and constants
 var messageHandleObject = messageHandle{}
-var LamportTimestamp uint32 = 0
+var LamportTimestamp uint32 = 1
 
 const MaxMessageLength = 128
 
 // ChatServer implements the gRPC service
 type ChatServer struct {
 	chatserver.UnimplementedServicesServer
-	clients map[chatserver.Services_ChatServiceServer]bool // Track connected clients
-	mu      sync.Mutex
+	clients        map[chatserver.Services_ChatServiceServer]bool // Track connected clients
+	mu             sync.Mutex
+	clientMetaData map[chatserver.Services_ChatServiceServer]metadata.MD
 }
 
 // ChatService implements the bi-directional streaming RPC for chat
@@ -51,14 +55,37 @@ func (cs *ChatServer) ChatService(csi chatserver.Services_ChatServiceServer) err
 	// Add client to the map
 	cs.mu.Lock()
 	LamportTimestamp++
-	log.Printf("Participant %s joined Chitty-Chat at Lamport time %d", csi.Context().Value("name"), LamportTimestamp)
+
+	// Retrieve metadata from the incoming context
+	md, ok := metadata.FromIncomingContext(csi.Context())
+	if !ok {
+		log.Println("No metadata found in context")
+	} else {
+		cs.clientMetaData[csi] = md
+		clientName := md["clientname"] // Metadata keys are lowercase
+		clientId := md["clientid"]
+		if len(clientName) > 0 {
+			message := messageUnit{
+				MessageBody:       fmt.Sprintf("Participant %s joined Chitty-Chat at Lamport time %d", clientName[0], LamportTimestamp),
+				MessageUniqueCode: rand.Intn(1e8),
+				ClientUniqueCode:  clientId[0],
+				IsSystemMessage:   true,
+				Timestamp:         getCurrentTimestamp(),
+				LamportTimestamp:  LamportTimestamp,
+			}
+			log.Printf(message.MessageBody)
+			messageHandleObject.MQue = append(messageHandleObject.MQue, message)
+
+		} else {
+			log.Println("clientId not found in metadata")
+		}
+	}
+
 	cs.clients[csi] = true
 	cs.mu.Unlock()
 
 	go receiveFromStream(csi, cs, errch) // Pass cs to receiveFromStream
 	go cs.sendToStream()
-
-
 
 	// Wait for error
 	return <-errch
@@ -99,7 +126,7 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *Ch
 				ClientName:        "System",
 				MessageBody:       "Exceeded character limit of 128, please write a smaller message",
 				MessageUniqueCode: rand.Intn(1e8),
-				ClientUniqueCode:  clientUniqueCode,
+				ClientUniqueCode:  chatServer.clientMetaData[csi]["clientid"][0],
 				IsSystemMessage:   true,
 				Timestamp:         timestamp,
 				LamportTimestamp:  LamportTimestamp,
@@ -111,13 +138,12 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *Ch
 		}
 
 		messageHandleObject.mu.Lock()
-		//TODO: Add Lamport timestamp evaluation here
 
 		messageHandleObject.MQue = append(messageHandleObject.MQue, messageUnit{
 			ClientName:        mssg.Name,
 			MessageBody:       mssg.Body,
 			MessageUniqueCode: rand.Intn(1e8),
-			ClientUniqueCode:  clientUniqueCode,
+			ClientUniqueCode:  chatServer.clientMetaData[csi]["clientid"][0],
 			IsSystemMessage:   false,
 			Timestamp:         timestamp,
 			LamportTimestamp:  LamportTimestamp,
@@ -154,15 +180,21 @@ func (cs *ChatServer) sendToStream() {
 		// Broadcast message to all clients
 		cs.mu.Lock()
 		for client := range cs.clients {
+			LamportTimestamp++ // Increment Lamport timestamp before sending the message
+			if currentMessage.ClientUniqueCode == cs.clientMetaData[client]["clientid"][0] && !currentMessage.IsSystemMessage {
+				continue // Skip sending the message to the client who sent it
+			}
 			// Send the message to all clients
-			LamportTimestamp++
+
 			serverMessage.LamportTimestamp = LamportTimestamp
 			err := client.Send(serverMessage)
 			if err != nil {
 				log.Printf("Failed to send message to client: %v", err)
 				delete(cs.clients, client) // Remove the client if there's an error
 			}
+			LamportTimestamp++ //Last increment sync with the client
 		}
+
 		cs.mu.Unlock()
 
 		// Remove the sent message from the queue
@@ -194,7 +226,8 @@ func main() {
 
 	// Initialize ChatServer with an empty clients map
 	chatServer := &ChatServer{
-		clients: make(map[chatserver.Services_ChatServiceServer]bool),
+		clients:        make(map[chatserver.Services_ChatServiceServer]bool),
+		clientMetaData: make(map[chatserver.Services_ChatServiceServer]metadata.MD),
 	}
 
 	chatserver.RegisterServicesServer(grpcserver, chatServer)
