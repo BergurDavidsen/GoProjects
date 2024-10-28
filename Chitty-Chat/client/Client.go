@@ -52,7 +52,7 @@ func (ch *ClientHandle) sendMessage() {
 			log.Printf("Error while sending message to server :: %v", err)
 		}
 
-		fmt.Printf("You sent:%+v\n", clientMessageBox.Body)
+		fmt.Printf("Your message was sent\n")
 
 	}
 

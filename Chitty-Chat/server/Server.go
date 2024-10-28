@@ -118,7 +118,6 @@ func receiveFromStream(csi chatserver.Services_ChatServiceServer, chatServer *Ch
 	for {
 		mssg, err := csi.Recv()
 		if err != nil {
-			log.Printf("Error in receiving message from client: %v", err)
 			LamportTimestamp++
 			disconnectMessage := messageUnit{
 				ClientName:       chatServer.clientMetaData[csi]["clientname"][0],
