@@ -11,10 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"google.golang.org/grpc/metadata"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 var LamportTimestamp uint32 = 1
@@ -143,6 +142,7 @@ func main() {
 		log.Fatalf("Failed to call ChatService :: %v", err)
 		return
 	}
+	LamportTimestamp++
 	ch.stream = stream
 
 	// implement communication with gRPC server
