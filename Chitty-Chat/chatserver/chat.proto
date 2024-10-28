@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package chatserver;
+
+option go_package = "Chitty-Chat/chatserver";
+
+message FromClient {
+    string name = 1;
+    string body = 2;
+    uint64 timestamp = 3;
+    uint32 LamportTimestamp = 4;
+    bool isSystemMessage = 5; // To distinguish system messages (like error notifications)
+}
+
+message FromServer {
+    string name = 1;
+    string body = 2;
+    bool isSystemMessage = 3;  // To distinguish system messages (like error notifications)
+    string timestamp = 4; 
+    uint32 LamportTimestamp = 5;
+}
+
+service Services {
+    rpc ChatService(stream FromClient) returns (stream FromServer){};
+}
