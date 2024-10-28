@@ -43,4 +43,7 @@ $ localhost:5001
 3.1 To leave the chat, simply terminate the program with: `ctrl+c`
 
 
+### 4. Diagram of RPC calls and Lamport timestamps
+
+![LamportTimestampDiagram](https://github.com/user-attachments/assets/3e90b69d-f686-42f8-b2aa-8cb0448dabaa)
 
