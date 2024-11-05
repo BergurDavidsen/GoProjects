@@ -13,7 +13,7 @@
 1.1 Open a terminal and navigate to the root-folder.  
 1.2 Execute: 
 ``` bash 
-$ go run node.go  <nodeId> <port> <peerAddresses>
+$ go run node.go <nodeId> <port> <peerAddresses>
 ```  
 This will by put the node into the network and listen for messages from other peer addresses
 
