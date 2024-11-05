@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "github.com/BergurDavidsen/GoProjects/Consensus/rpc";
+
+package rpc;
+
+service NodeService {
+    rpc RequestAccess (RequestMessage) returns (ResponseMessage);
+}
+
+message RequestMessage {
+    int32 nodeId = 1;
+    int64 timestamp = 2;
+}
+
+message ResponseMessage {
+    bool permissionGranted = 1;
+}
