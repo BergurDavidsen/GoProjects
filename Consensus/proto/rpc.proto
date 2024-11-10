@@ -4,15 +4,17 @@ option go_package = "github.com/BergurDavidsen/GoProjects/Consensus/rpc";
 
 package rpc;
 
-service NodeService {
-    rpc RequestAccess (RequestMessage) returns (ResponseMessage);
+service TokenService {
+    rpc PassToken(Token) returns (Ack) {}
 }
 
-message RequestMessage {
-    int32 nodeId = 1;
-    int64 timestamp = 2;
+message Token {
+    string message = 1;
+    string token = 2;
+    int32 id = 3;
+    string holder = 4;
 }
 
-message ResponseMessage {
-    bool permissionGranted = 1;
+message Ack {
+   bool success = 1;
 }
