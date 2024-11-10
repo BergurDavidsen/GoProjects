@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -30,10 +31,11 @@ type (
 )
 
 func (t *TokenServer) PassToken(ctx context.Context, token *pb.Token) (*pb.Ack, error) {
+	fmt.Println("--------------------")
 	log.Printf("Node %d received token: %s from holder: %s", t.node.id, token.Token, token.Holder)
 
 	// enter critical section if wanted
-	EnterCriticalSection()
+	EnterCriticalSection(t.node)
 
 	// send token to next node
 	sendToken(t.node)
@@ -58,10 +60,28 @@ func sendToken(node *Node) {
 
 }
 
-func EnterCriticalSection() {
+func EnterCriticalSection(node *Node) {
 	log.Printf("Entering critical section\n")
+
+	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Error opening file: %v", err)
+	}
+	defer file.Close()
+
+	timestamp := time.Now().Format("2006-01-02 15:04:05.000") // e.g., "2024-11-07 13:45:30.123"
+	messageToWrite := fmt.Sprintf("%s | Node %d | <SOMETHING SECRET>\n", timestamp, node.id)
+
+	if _, err := file.WriteString(messageToWrite); err != nil {
+		log.Printf("Error writing to file: %v", err)
+	} else {
+		log.Printf("Successfully wrote to log file\n")
+	}
+
 	time.Sleep(2 * time.Second)
 	log.Printf("Exiting critical section\n")
+	fmt.Println("--------------------")
+	time.Sleep(1 * time.Second)
 }
 
 func main() {
