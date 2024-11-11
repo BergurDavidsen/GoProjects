@@ -19,99 +19,99 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	NodeService_RequestAccess_FullMethodName = "/rpc.NodeService/RequestAccess"
+	TokenService_PassToken_FullMethodName = "/rpc.TokenService/PassToken"
 )
 
-// NodeServiceClient is the client API for NodeService service.
+// TokenServiceClient is the client API for TokenService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type NodeServiceClient interface {
-	RequestAccess(ctx context.Context, in *RequestMessage, opts ...grpc.CallOption) (*ResponseMessage, error)
+type TokenServiceClient interface {
+	PassToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*Ack, error)
 }
 
-type nodeServiceClient struct {
+type tokenServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewNodeServiceClient(cc grpc.ClientConnInterface) NodeServiceClient {
-	return &nodeServiceClient{cc}
+func NewTokenServiceClient(cc grpc.ClientConnInterface) TokenServiceClient {
+	return &tokenServiceClient{cc}
 }
 
-func (c *nodeServiceClient) RequestAccess(ctx context.Context, in *RequestMessage, opts ...grpc.CallOption) (*ResponseMessage, error) {
+func (c *tokenServiceClient) PassToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*Ack, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ResponseMessage)
-	err := c.cc.Invoke(ctx, NodeService_RequestAccess_FullMethodName, in, out, cOpts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, TokenService_PassToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// NodeServiceServer is the server API for NodeService service.
-// All implementations should embed UnimplementedNodeServiceServer
+// TokenServiceServer is the server API for TokenService service.
+// All implementations should embed UnimplementedTokenServiceServer
 // for forward compatibility.
-type NodeServiceServer interface {
-	RequestAccess(context.Context, *RequestMessage) (*ResponseMessage, error)
+type TokenServiceServer interface {
+	PassToken(context.Context, *Token) (*Ack, error)
 }
 
-// UnimplementedNodeServiceServer should be embedded to have
+// UnimplementedTokenServiceServer should be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedNodeServiceServer struct{}
+type UnimplementedTokenServiceServer struct{}
 
-func (UnimplementedNodeServiceServer) RequestAccess(context.Context, *RequestMessage) (*ResponseMessage, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RequestAccess not implemented")
+func (UnimplementedTokenServiceServer) PassToken(context.Context, *Token) (*Ack, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PassToken not implemented")
 }
-func (UnimplementedNodeServiceServer) testEmbeddedByValue() {}
+func (UnimplementedTokenServiceServer) testEmbeddedByValue() {}
 
-// UnsafeNodeServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to NodeServiceServer will
+// UnsafeTokenServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TokenServiceServer will
 // result in compilation errors.
-type UnsafeNodeServiceServer interface {
-	mustEmbedUnimplementedNodeServiceServer()
+type UnsafeTokenServiceServer interface {
+	mustEmbedUnimplementedTokenServiceServer()
 }
 
-func RegisterNodeServiceServer(s grpc.ServiceRegistrar, srv NodeServiceServer) {
-	// If the following call pancis, it indicates UnimplementedNodeServiceServer was
+func RegisterTokenServiceServer(s grpc.ServiceRegistrar, srv TokenServiceServer) {
+	// If the following call pancis, it indicates UnimplementedTokenServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&NodeService_ServiceDesc, srv)
+	s.RegisterService(&TokenService_ServiceDesc, srv)
 }
 
-func _NodeService_RequestAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RequestMessage)
+func _TokenService_PassToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Token)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NodeServiceServer).RequestAccess(ctx, in)
+		return srv.(TokenServiceServer).PassToken(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: NodeService_RequestAccess_FullMethodName,
+		FullMethod: TokenService_PassToken_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServiceServer).RequestAccess(ctx, req.(*RequestMessage))
+		return srv.(TokenServiceServer).PassToken(ctx, req.(*Token))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// NodeService_ServiceDesc is the grpc.ServiceDesc for NodeService service.
+// TokenService_ServiceDesc is the grpc.ServiceDesc for TokenService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var NodeService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "rpc.NodeService",
-	HandlerType: (*NodeServiceServer)(nil),
+var TokenService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "rpc.TokenService",
+	HandlerType: (*TokenServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RequestAccess",
-			Handler:    _NodeService_RequestAccess_Handler,
+			MethodName: "PassToken",
+			Handler:    _TokenService_PassToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
