@@ -22,8 +22,8 @@ This will start the current node and listen for the token from other peer addres
 ### 2. Example
 2.1 This is an example of how you can run 3 nodes. Run each of these commands in their own terminal:
 ```bash
-$ go run node.go 2 5001 localhost:5002
-$ go run node.go 3 5002 localhost:5001
+$ go run node.go 2 5002 localhost:5003
+$ go run node.go 3 5003 localhost:5001
 # and node 1 to start the token ring
-$ go run node.go 1 5003 localhost:5001
+$ go run node.go 1 5001 localhost:5002
 ```
