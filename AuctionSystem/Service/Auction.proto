@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package Service;
+
+option go_package = "./Service";
+
+service AuctionService {
+    rpc AuctionService(stream ClientRequest) returns (stream ServerResponse){};
+}
+
+message BidRequest {
+    int32 itemid = 1;
+    int32 price = 2;
+}
+
+message QueryRequest {
+    bool request = 1;
+}
+
+message ClientRequest {
+    oneof request {
+        BidRequest bid = 1;
+        QueryRequest query = 2;
+    }
+}
+
+message ItemResponse {
+    string name = 1;
+    int32 id = 2;
+    int32 price = 3;
+}
+
+message QueryResponse {
+    repeated ItemResponse items = 1;
+}
+
+message ServerResponse {
+    oneof response {
+        ItemResponse bid = 1;
+        QueryResponse query = 2;
+    }
+}
+
