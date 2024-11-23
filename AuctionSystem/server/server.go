@@ -32,16 +32,19 @@ type(
 		clients 		map[Service.AuctionService_AuctionServiceServer]bool
 		mu 				sync.Mutex
 		auctions 		[]*Auction
+		currentItemIndex int
 	}
 
 	Auction struct {
-		clients 		map[Service.AuctionService_AuctionServiceServer]uint32
+		clients 		map[Service.AuctionService_AuctionServiceServer]int32
+		clientBid 		[]int32
 		mu 				sync.Mutex
-		highestBid 		uint32
+		highestBid 		int32
 		auctionItem 	string
 		isActive 		bool
 		startTime 		time.Time
 		duration 		time.Duration
+		// TODO: implement Lamport timestamps
 	}
 )
 
@@ -59,6 +62,8 @@ func (as *AuctionServer) AuctionService(csi Service.AuctionService_AuctionServic
 }
 
 func receiveFromStream(csi Service.AuctionService_AuctionServiceServer, as *AuctionServer) {
+	// TODO: Handle client-disconnections
+
 	for{
 		request, err := csi.Recv()
 		if err != nil {
@@ -67,7 +72,8 @@ func receiveFromStream(csi Service.AuctionService_AuctionServiceServer, as *Auct
 
 		switch request := request.Request.(type) {
 			case *Service.ClientRequest_Bid:
-				log.Println("a")				
+				// TODO: finish implementing bidding
+				//csi.Send(bid(csi, as, request.Bid.Price))
 			case *Service.ClientRequest_Query:
 				csi.Send(as.getStatus(int(request.Query.ItemId)))
 
@@ -77,8 +83,37 @@ func receiveFromStream(csi Service.AuctionService_AuctionServiceServer, as *Auct
 	}
 }
 
-func bid(csi Service.AuctionService_AuctionServiceServer, as *AuctionServer){
-	
+func bid(csi Service.AuctionService_AuctionServiceServer, as *AuctionServer, bid int32) *Service.ServerResponse{
+	if as.currentItemIndex == 0 {
+		as.newAuction()
+	}
+
+	var auction = as.auctions[as.currentItemIndex]
+	auction.clients[csi] = bid
+	if len(auction.clientBid) < 0 {
+		auction.clientBid[0] = bid
+	} else {
+		auction.clientBid[len(auction.clientBid)-1] = bid
+	}
+
+	if remainingTime(auction.startTime, auction.duration) < 0 {
+		return &Service.ServerResponse{
+			Response: &Service.ServerResponse_Bid{
+				Bid: &Service.BidResponse{
+					Success: false,
+					HighestBid: int32(auction.highestBid),
+					CurrentItem: "Auction has ended for item: " + auction.auctionItem,
+				},
+			},
+		}
+	}
+
+	if auction.highestBid < bid {
+		auction.highestBid = bid
+	}
+
+
+	return nil
 
 }
 
@@ -101,12 +136,20 @@ func (as *AuctionServer) getStatus(id int) *Service.ServerResponse {
 		id = len(as.auctions) -1
 	}
 
+	auction := as.auctions[len(as.auctions)-1]
+    remainingTime := remainingTime(auction.startTime, auction.duration)
+
+
+    if remainingTime < 0 {
+        remainingTime = 0
+    }
+
 
 	response := &Service.ServerResponse{
 		Response: &Service.ServerResponse_Query{
 			Query: &Service.QueryResponse{
-				RemainingTime: int32(time.Since(as.auctions[id].startTime)),
-				HighestBid: int32(as.auctions[id].highestBid),
+				RemainingTime: int32(remainingTime.Seconds()),
+				HighestBid: int32(auction.highestBid),
 				CurrentItem: as.auctions[id].auctionItem,
 			},
 		},
@@ -116,22 +159,26 @@ func (as *AuctionServer) getStatus(id int) *Service.ServerResponse {
 	return response
 }
 
-func (as *AuctionServer) newAuction(id int){
-	if !(len(items) > 0) {
+func remainingTime(start time.Time, duration time.Duration) time.Duration {
+	return duration - time.Since(start)
+}
+
+func (as *AuctionServer) newAuction(){
+	if as.currentItemIndex > len(items) {
 		log.Fatal("Error :: Auction House has no more items")
 	}
 
 	as.mu.Lock()
 	
-	as.auctions[0] = &Auction{
-		clients: make(map[Service.AuctionService_AuctionServiceServer]uint32),
-		auctionItem: items[0],
+	as.auctions[as.currentItemIndex] = &Auction{
+		clients: make(map[Service.AuctionService_AuctionServiceServer]int32),
+		auctionItem: items[as.currentItemIndex],
 		isActive: true,
 		startTime: time.Now(),
 		duration: time.Duration(30) * time.Second,
 	}
 
-
+	as.currentItemIndex++
 
 	as.mu.Unlock()
 }
@@ -159,6 +206,7 @@ func main() {
 	auctionServer := AuctionServer{
 		clients: make(map[Service.AuctionService_AuctionServiceServer]bool),
 		auctions: []*Auction{},
+		currentItemIndex: 0,
 	}
 
 	Service.RegisterAuctionServiceServer(grpcServer, &auctionServer)

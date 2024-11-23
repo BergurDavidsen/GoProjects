@@ -24,6 +24,8 @@ type (
 		userName string
 		id int
 	}
+
+	// TODO: implement lamport timestamps
 )
  
 func (c *ClientHandle) sendToStream(reader *bufio.Reader) {
