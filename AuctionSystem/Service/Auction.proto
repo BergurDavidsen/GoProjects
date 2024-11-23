@@ -10,10 +10,12 @@ service AuctionService {
 
 message BidRequest {
     int32 price = 1;
+    int32 itemId = 2;
 }
 
 message QueryRequest {
     bool request = 1;
+    int32 itemId = 2;
 }
 
 message ClientRequest {
@@ -23,20 +25,21 @@ message ClientRequest {
     }
 }
 
-message ItemResponse {
-    string name = 1;
-    int32 id = 2;
-    int32 price = 3;
+message BidResponse {
+    bool success = 1;
+    int32 highestBid = 2;
+    string currentItem = 3;
 }
 
 message QueryResponse {
-    repeated ItemResponse items = 1;
+    int32 remainingTime = 1;
+    int32 highestBid = 2;
+    string currentItem = 3;
 }
 
 message ServerResponse {
     oneof response {
-        ItemResponse bid = 1;
+        BidResponse bid = 1;
         QueryResponse query = 2;
     }
 }
-

@@ -54,48 +54,64 @@ func (c *ClientHandle) sendToStream(reader *bufio.Reader) {
 
 		// Handle commands
 		switch message[0] {
-		case "bid":
-			// Ensure correct number of arguments
-			if len(message) != 2 {
-				log.Println("Invalid format. Usage: bid <price>")
-				continue
-			}
+			case "bid":
+				// Ensure correct number of arguments
+				if len(message) != 2 {
+					log.Println("Invalid format. Usage: bid <price>")
+					continue
+				}
 
-			// Convert price to integer
-			price, err := strconv.Atoi(message[1])
-			if err != nil {
-				log.Println("Invalid price. Please enter a numeric value.")
-				continue
-			}
+				// Convert price to integer
+				price, err := strconv.Atoi(message[1])
+				if err != nil {
+					log.Println("Invalid price. Please enter a numeric value.")
+					continue
+				}
 
-			// Create bid request
-			request = &Service.ClientRequest{
-				Request: &Service.ClientRequest_Bid{
-					Bid: &Service.BidRequest{
-						Price: int32(price),
+				// Create bid request
+				request = &Service.ClientRequest{
+					Request: &Service.ClientRequest_Bid{
+						Bid: &Service.BidRequest{
+							Price: int32(price),
+						},
 					},
-				},
-			}
+				}
 
-		case "query":
-			// Ensure no extra arguments
-			if len(message) != 1 {
-				log.Println("Invalid format. Usage: query")
+			case "query":
+				// Filter for query type
+				if len(message) == 1 {
+					// Create query request
+					request = &Service.ClientRequest{
+						Request: &Service.ClientRequest_Query{
+							Query: &Service.QueryRequest{ 
+								Request: false,
+								ItemId: -1,
+							},
+						},
+					}
+				} else if len(message) == 2 {
+					id, err := strconv.Atoi(message[2])
+					if err != nil {
+						log.Println("Invalid ItemId. Please enter a numeric value.")
+						continue
+					}
+
+					// Create query request
+					request = &Service.ClientRequest{
+						Request: &Service.ClientRequest_Query{
+							Query: &Service.QueryRequest{
+								Request: true,
+								ItemId: int32(id),
+							},
+						},
+					}
+				} else {
+					log.Println("Invalid query. Usage: query [<itemId>]\nLeaving <itemId> empty will return the latest current auction")
+				}
+
+			default:
+				log.Println("Unknown command. Please try again.")
 				continue
-			}
-
-			// Create query request
-			request = &Service.ClientRequest{
-				Request: &Service.ClientRequest_Query{
-					Query: &Service.QueryRequest{
-						Request: true,
-					},
-				},
-			}
-
-		default:
-			log.Println("Unknown command. Please try again.")
-			continue
 		}
 
 		// Send the request to the stream
@@ -108,7 +124,16 @@ func (c *ClientHandle) sendToStream(reader *bufio.Reader) {
 }
 
 func (c *ClientHandle) receiveFromStream() {
-	// not implemented
+	for{
+		response, err := c.stream.Recv()
+		if err != nil {
+			log.Printf("Error :: %s", err)
+			continue
+		}
+
+		log.Println(response)
+
+	}
 }
 
 
