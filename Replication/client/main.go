@@ -13,9 +13,7 @@ import (
 	"strings"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 )
 
 type ClientHandle struct {
@@ -90,15 +88,10 @@ func bid(amount int, c *ClientHandle) {
 		})
 
 		if err != nil {
-			st, ok := status.FromError(err)
-			if ok && st.Code() == codes.Unavailable && st.Message() == "connection error: desc = \"transport is closing\"" {
-				log.Printf("Specific gRPC error occurred: %s\n", err)
-				continue
-			}
+			continue
 		}
 
 		if ack == nil {
-			log.Println("Error in placing bid :: Error ")
 			continue
 		}
 		outputArray = append(outputArray, ack.Ack)
