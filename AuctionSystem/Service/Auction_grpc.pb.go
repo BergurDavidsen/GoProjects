@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuctionService_AuctionService_FullMethodName = "/Service.AuctionService/AuctionService"
+	AuctionService_Bid_FullMethodName    = "/Service.AuctionService/Bid"
+	AuctionService_Result_FullMethodName = "/Service.AuctionService/Result"
 )
 
 // AuctionServiceClient is the client API for AuctionService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuctionServiceClient interface {
-	AuctionService(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientRequest, ServerResponse], error)
+	Bid(ctx context.Context, in *BidRequest, opts ...grpc.CallOption) (*Ack, error)
+	Result(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ResultResponse, error)
 }
 
 type auctionServiceClient struct {
@@ -37,24 +39,32 @@ func NewAuctionServiceClient(cc grpc.ClientConnInterface) AuctionServiceClient {
 	return &auctionServiceClient{cc}
 }
 
-func (c *auctionServiceClient) AuctionService(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientRequest, ServerResponse], error) {
+func (c *auctionServiceClient) Bid(ctx context.Context, in *BidRequest, opts ...grpc.CallOption) (*Ack, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &AuctionService_ServiceDesc.Streams[0], AuctionService_AuctionService_FullMethodName, cOpts...)
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, AuctionService_Bid_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[ClientRequest, ServerResponse]{ClientStream: stream}
-	return x, nil
+	return out, nil
 }
 
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AuctionService_AuctionServiceClient = grpc.BidiStreamingClient[ClientRequest, ServerResponse]
+func (c *auctionServiceClient) Result(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ResultResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResultResponse)
+	err := c.cc.Invoke(ctx, AuctionService_Result_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 // AuctionServiceServer is the server API for AuctionService service.
 // All implementations must embed UnimplementedAuctionServiceServer
 // for forward compatibility.
 type AuctionServiceServer interface {
-	AuctionService(grpc.BidiStreamingServer[ClientRequest, ServerResponse]) error
+	Bid(context.Context, *BidRequest) (*Ack, error)
+	Result(context.Context, *Empty) (*ResultResponse, error)
 	mustEmbedUnimplementedAuctionServiceServer()
 }
 
@@ -65,8 +75,11 @@ type AuctionServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuctionServiceServer struct{}
 
-func (UnimplementedAuctionServiceServer) AuctionService(grpc.BidiStreamingServer[ClientRequest, ServerResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method AuctionService not implemented")
+func (UnimplementedAuctionServiceServer) Bid(context.Context, *BidRequest) (*Ack, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Bid not implemented")
+}
+func (UnimplementedAuctionServiceServer) Result(context.Context, *Empty) (*ResultResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Result not implemented")
 }
 func (UnimplementedAuctionServiceServer) mustEmbedUnimplementedAuctionServiceServer() {}
 func (UnimplementedAuctionServiceServer) testEmbeddedByValue()                        {}
@@ -89,12 +102,41 @@ func RegisterAuctionServiceServer(s grpc.ServiceRegistrar, srv AuctionServiceSer
 	s.RegisterService(&AuctionService_ServiceDesc, srv)
 }
 
-func _AuctionService_AuctionService_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(AuctionServiceServer).AuctionService(&grpc.GenericServerStream[ClientRequest, ServerResponse]{ServerStream: stream})
+func _AuctionService_Bid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BidRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuctionServiceServer).Bid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuctionService_Bid_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuctionServiceServer).Bid(ctx, req.(*BidRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AuctionService_AuctionServiceServer = grpc.BidiStreamingServer[ClientRequest, ServerResponse]
+func _AuctionService_Result_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuctionServiceServer).Result(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuctionService_Result_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuctionServiceServer).Result(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // AuctionService_ServiceDesc is the grpc.ServiceDesc for AuctionService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -102,14 +144,16 @@ type AuctionService_AuctionServiceServer = grpc.BidiStreamingServer[ClientReques
 var AuctionService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Service.AuctionService",
 	HandlerType: (*AuctionServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "AuctionService",
-			Handler:       _AuctionService_AuctionService_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Bid",
+			Handler:    _AuctionService_Bid_Handler,
+		},
+		{
+			MethodName: "Result",
+			Handler:    _AuctionService_Result_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "Service/Auction.proto",
 }

@@ -20,19 +20,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Empty struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Empty) Reset() {
+	*x = Empty{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_Service_Auction_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Empty) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Empty) ProtoMessage() {}
+
+func (x *Empty) ProtoReflect() protoreflect.Message {
+	mi := &file_Service_Auction_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
+func (*Empty) Descriptor() ([]byte, []int) {
+	return file_Service_Auction_proto_rawDescGZIP(), []int{0}
+}
+
 type BidRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Price  int32 `protobuf:"varint,1,opt,name=price,proto3" json:"price,omitempty"`
-	ItemId int32 `protobuf:"varint,2,opt,name=itemId,proto3" json:"itemId,omitempty"`
+	Amount int32 `protobuf:"varint,1,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
 func (x *BidRequest) Reset() {
 	*x = BidRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_Service_Auction_proto_msgTypes[0]
+		mi := &file_Service_Auction_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -45,7 +82,7 @@ func (x *BidRequest) String() string {
 func (*BidRequest) ProtoMessage() {}
 
 func (x *BidRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_Service_Auction_proto_msgTypes[0]
+	mi := &file_Service_Auction_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,91 +95,26 @@ func (x *BidRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BidRequest.ProtoReflect.Descriptor instead.
 func (*BidRequest) Descriptor() ([]byte, []int) {
-	return file_Service_Auction_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *BidRequest) GetPrice() int32 {
-	if x != nil {
-		return x.Price
-	}
-	return 0
-}
-
-func (x *BidRequest) GetItemId() int32 {
-	if x != nil {
-		return x.ItemId
-	}
-	return 0
-}
-
-type QueryRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Request bool  `protobuf:"varint,1,opt,name=request,proto3" json:"request,omitempty"`
-	ItemId  int32 `protobuf:"varint,2,opt,name=itemId,proto3" json:"itemId,omitempty"`
-}
-
-func (x *QueryRequest) Reset() {
-	*x = QueryRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_Service_Auction_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *QueryRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*QueryRequest) ProtoMessage() {}
-
-func (x *QueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_Service_Auction_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use QueryRequest.ProtoReflect.Descriptor instead.
-func (*QueryRequest) Descriptor() ([]byte, []int) {
 	return file_Service_Auction_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *QueryRequest) GetRequest() bool {
+func (x *BidRequest) GetAmount() int32 {
 	if x != nil {
-		return x.Request
-	}
-	return false
-}
-
-func (x *QueryRequest) GetItemId() int32 {
-	if x != nil {
-		return x.ItemId
+		return x.Amount
 	}
 	return 0
 }
 
-type ClientRequest struct {
+type Ack struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Types that are assignable to Request:
-	//	*ClientRequest_Bid
-	//	*ClientRequest_Query
-	Request isClientRequest_Request `protobuf_oneof:"request"`
+	Ack string `protobuf:"bytes,1,opt,name=ack,proto3" json:"ack,omitempty"`
 }
 
-func (x *ClientRequest) Reset() {
-	*x = ClientRequest{}
+func (x *Ack) Reset() {
+	*x = Ack{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_Service_Auction_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -150,13 +122,13 @@ func (x *ClientRequest) Reset() {
 	}
 }
 
-func (x *ClientRequest) String() string {
+func (x *Ack) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ClientRequest) ProtoMessage() {}
+func (*Ack) ProtoMessage() {}
 
-func (x *ClientRequest) ProtoReflect() protoreflect.Message {
+func (x *Ack) ProtoReflect() protoreflect.Message {
 	mi := &file_Service_Auction_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -168,60 +140,29 @@ func (x *ClientRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ClientRequest.ProtoReflect.Descriptor instead.
-func (*ClientRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use Ack.ProtoReflect.Descriptor instead.
+func (*Ack) Descriptor() ([]byte, []int) {
 	return file_Service_Auction_proto_rawDescGZIP(), []int{2}
 }
 
-func (m *ClientRequest) GetRequest() isClientRequest_Request {
-	if m != nil {
-		return m.Request
+func (x *Ack) GetAck() string {
+	if x != nil {
+		return x.Ack
 	}
-	return nil
+	return ""
 }
 
-func (x *ClientRequest) GetBid() *BidRequest {
-	if x, ok := x.GetRequest().(*ClientRequest_Bid); ok {
-		return x.Bid
-	}
-	return nil
-}
-
-func (x *ClientRequest) GetQuery() *QueryRequest {
-	if x, ok := x.GetRequest().(*ClientRequest_Query); ok {
-		return x.Query
-	}
-	return nil
-}
-
-type isClientRequest_Request interface {
-	isClientRequest_Request()
-}
-
-type ClientRequest_Bid struct {
-	Bid *BidRequest `protobuf:"bytes,1,opt,name=bid,proto3,oneof"`
-}
-
-type ClientRequest_Query struct {
-	Query *QueryRequest `protobuf:"bytes,2,opt,name=query,proto3,oneof"`
-}
-
-func (*ClientRequest_Bid) isClientRequest_Request() {}
-
-func (*ClientRequest_Query) isClientRequest_Request() {}
-
-type BidResponse struct {
+type ResultResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Success     bool   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	HighestBid  int32  `protobuf:"varint,2,opt,name=highestBid,proto3" json:"highestBid,omitempty"`
-	CurrentItem string `protobuf:"bytes,3,opt,name=currentItem,proto3" json:"currentItem,omitempty"`
+	IsOver     bool  `protobuf:"varint,1,opt,name=isOver,proto3" json:"isOver,omitempty"`
+	HighestBid int32 `protobuf:"varint,2,opt,name=highestBid,proto3" json:"highestBid,omitempty"`
 }
 
-func (x *BidResponse) Reset() {
-	*x = BidResponse{}
+func (x *ResultResponse) Reset() {
+	*x = ResultResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_Service_Auction_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -229,13 +170,13 @@ func (x *BidResponse) Reset() {
 	}
 }
 
-func (x *BidResponse) String() string {
+func (x *ResultResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BidResponse) ProtoMessage() {}
+func (*ResultResponse) ProtoMessage() {}
 
-func (x *BidResponse) ProtoReflect() protoreflect.Message {
+func (x *ResultResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_Service_Auction_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -247,224 +188,48 @@ func (x *BidResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BidResponse.ProtoReflect.Descriptor instead.
-func (*BidResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResultResponse.ProtoReflect.Descriptor instead.
+func (*ResultResponse) Descriptor() ([]byte, []int) {
 	return file_Service_Auction_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *BidResponse) GetSuccess() bool {
+func (x *ResultResponse) GetIsOver() bool {
 	if x != nil {
-		return x.Success
+		return x.IsOver
 	}
 	return false
 }
 
-func (x *BidResponse) GetHighestBid() int32 {
+func (x *ResultResponse) GetHighestBid() int32 {
 	if x != nil {
 		return x.HighestBid
 	}
 	return 0
 }
-
-func (x *BidResponse) GetCurrentItem() string {
-	if x != nil {
-		return x.CurrentItem
-	}
-	return ""
-}
-
-type QueryResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	RemainingTime int32  `protobuf:"varint,1,opt,name=remainingTime,proto3" json:"remainingTime,omitempty"`
-	HighestBid    int32  `protobuf:"varint,2,opt,name=highestBid,proto3" json:"highestBid,omitempty"`
-	CurrentItem   string `protobuf:"bytes,3,opt,name=currentItem,proto3" json:"currentItem,omitempty"`
-}
-
-func (x *QueryResponse) Reset() {
-	*x = QueryResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_Service_Auction_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *QueryResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*QueryResponse) ProtoMessage() {}
-
-func (x *QueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_Service_Auction_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use QueryResponse.ProtoReflect.Descriptor instead.
-func (*QueryResponse) Descriptor() ([]byte, []int) {
-	return file_Service_Auction_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *QueryResponse) GetRemainingTime() int32 {
-	if x != nil {
-		return x.RemainingTime
-	}
-	return 0
-}
-
-func (x *QueryResponse) GetHighestBid() int32 {
-	if x != nil {
-		return x.HighestBid
-	}
-	return 0
-}
-
-func (x *QueryResponse) GetCurrentItem() string {
-	if x != nil {
-		return x.CurrentItem
-	}
-	return ""
-}
-
-type ServerResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Types that are assignable to Response:
-	//	*ServerResponse_Bid
-	//	*ServerResponse_Query
-	Response isServerResponse_Response `protobuf_oneof:"response"`
-}
-
-func (x *ServerResponse) Reset() {
-	*x = ServerResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_Service_Auction_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ServerResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ServerResponse) ProtoMessage() {}
-
-func (x *ServerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_Service_Auction_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ServerResponse.ProtoReflect.Descriptor instead.
-func (*ServerResponse) Descriptor() ([]byte, []int) {
-	return file_Service_Auction_proto_rawDescGZIP(), []int{5}
-}
-
-func (m *ServerResponse) GetResponse() isServerResponse_Response {
-	if m != nil {
-		return m.Response
-	}
-	return nil
-}
-
-func (x *ServerResponse) GetBid() *BidResponse {
-	if x, ok := x.GetResponse().(*ServerResponse_Bid); ok {
-		return x.Bid
-	}
-	return nil
-}
-
-func (x *ServerResponse) GetQuery() *QueryResponse {
-	if x, ok := x.GetResponse().(*ServerResponse_Query); ok {
-		return x.Query
-	}
-	return nil
-}
-
-type isServerResponse_Response interface {
-	isServerResponse_Response()
-}
-
-type ServerResponse_Bid struct {
-	Bid *BidResponse `protobuf:"bytes,1,opt,name=bid,proto3,oneof"`
-}
-
-type ServerResponse_Query struct {
-	Query *QueryResponse `protobuf:"bytes,2,opt,name=query,proto3,oneof"`
-}
-
-func (*ServerResponse_Bid) isServerResponse_Response() {}
-
-func (*ServerResponse_Query) isServerResponse_Response() {}
 
 var File_Service_Auction_proto protoreflect.FileDescriptor
 
 var file_Service_Auction_proto_rawDesc = []byte{
 	0x0a, 0x15, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2f, 0x41, 0x75, 0x63, 0x74, 0x69, 0x6f,
 	0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x07, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
-	0x22, 0x3a, 0x0a, 0x0a, 0x42, 0x69, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x14,
-	0x0a, 0x05, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x70,
-	0x72, 0x69, 0x63, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x69, 0x74, 0x65, 0x6d, 0x49, 0x64, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x69, 0x74, 0x65, 0x6d, 0x49, 0x64, 0x22, 0x40, 0x0a, 0x0c,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a, 0x07,
-	0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x72,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x69, 0x74, 0x65, 0x6d, 0x49, 0x64,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x69, 0x74, 0x65, 0x6d, 0x49, 0x64, 0x22, 0x72,
-	0x0a, 0x0d, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
-	0x27, 0x0a, 0x03, 0x62, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x53,
-	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x42, 0x69, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x48, 0x00, 0x52, 0x03, 0x62, 0x69, 0x64, 0x12, 0x2d, 0x0a, 0x05, 0x71, 0x75, 0x65, 0x72,
-	0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
-	0x65, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x48, 0x00,
-	0x52, 0x05, 0x71, 0x75, 0x65, 0x72, 0x79, 0x42, 0x09, 0x0a, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x22, 0x69, 0x0a, 0x0b, 0x42, 0x69, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x1e, 0x0a, 0x0a, 0x68,
-	0x69, 0x67, 0x68, 0x65, 0x73, 0x74, 0x42, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x0a, 0x68, 0x69, 0x67, 0x68, 0x65, 0x73, 0x74, 0x42, 0x69, 0x64, 0x12, 0x20, 0x0a, 0x0b, 0x63,
-	0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x49, 0x74, 0x65, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0b, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x49, 0x74, 0x65, 0x6d, 0x22, 0x77, 0x0a,
-	0x0d, 0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x24,
-	0x0a, 0x0d, 0x72, 0x65, 0x6d, 0x61, 0x69, 0x6e, 0x69, 0x6e, 0x67, 0x54, 0x69, 0x6d, 0x65, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0d, 0x72, 0x65, 0x6d, 0x61, 0x69, 0x6e, 0x69, 0x6e, 0x67,
-	0x54, 0x69, 0x6d, 0x65, 0x12, 0x1e, 0x0a, 0x0a, 0x68, 0x69, 0x67, 0x68, 0x65, 0x73, 0x74, 0x42,
-	0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0a, 0x68, 0x69, 0x67, 0x68, 0x65, 0x73,
-	0x74, 0x42, 0x69, 0x64, 0x12, 0x20, 0x0a, 0x0b, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x49,
-	0x74, 0x65, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x63, 0x75, 0x72, 0x72, 0x65,
-	0x6e, 0x74, 0x49, 0x74, 0x65, 0x6d, 0x22, 0x76, 0x0a, 0x0e, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x28, 0x0a, 0x03, 0x62, 0x69, 0x64, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e,
-	0x42, 0x69, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x48, 0x00, 0x52, 0x03, 0x62,
-	0x69, 0x64, 0x12, 0x2e, 0x0a, 0x05, 0x71, 0x75, 0x65, 0x72, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x16, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x48, 0x00, 0x52, 0x05, 0x71, 0x75, 0x65,
-	0x72, 0x79, 0x42, 0x0a, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0x59,
-	0x0a, 0x0e, 0x41, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
-	0x12, 0x47, 0x0a, 0x0e, 0x41, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69,
-	0x63, 0x65, 0x12, 0x16, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x43, 0x6c, 0x69,
-	0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e, 0x53, 0x65, 0x72,
-	0x76, 0x69, 0x63, 0x65, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x42, 0x0b, 0x5a, 0x09, 0x2e, 0x2f, 0x53,
-	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0x07, 0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x24, 0x0a, 0x0a, 0x42, 0x69, 0x64,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e,
+	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x22,
+	0x17, 0x0a, 0x03, 0x41, 0x63, 0x6b, 0x12, 0x10, 0x0a, 0x03, 0x61, 0x63, 0x6b, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x03, 0x61, 0x63, 0x6b, 0x22, 0x48, 0x0a, 0x0e, 0x52, 0x65, 0x73, 0x75,
+	0x6c, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x69, 0x73,
+	0x4f, 0x76, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x69, 0x73, 0x4f, 0x76,
+	0x65, 0x72, 0x12, 0x1e, 0x0a, 0x0a, 0x68, 0x69, 0x67, 0x68, 0x65, 0x73, 0x74, 0x42, 0x69, 0x64,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0a, 0x68, 0x69, 0x67, 0x68, 0x65, 0x73, 0x74, 0x42,
+	0x69, 0x64, 0x32, 0x6d, 0x0a, 0x0e, 0x41, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x12, 0x28, 0x0a, 0x03, 0x42, 0x69, 0x64, 0x12, 0x13, 0x2e, 0x53, 0x65,
+	0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x42, 0x69, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x0c, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x41, 0x63, 0x6b, 0x12, 0x31,
+	0x0a, 0x06, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x0e, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x17, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x42, 0x0b, 0x5a, 0x09, 0x2e, 0x2f, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -479,27 +244,23 @@ func file_Service_Auction_proto_rawDescGZIP() []byte {
 	return file_Service_Auction_proto_rawDescData
 }
 
-var file_Service_Auction_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_Service_Auction_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_Service_Auction_proto_goTypes = []interface{}{
-	(*BidRequest)(nil),     // 0: Service.BidRequest
-	(*QueryRequest)(nil),   // 1: Service.QueryRequest
-	(*ClientRequest)(nil),  // 2: Service.ClientRequest
-	(*BidResponse)(nil),    // 3: Service.BidResponse
-	(*QueryResponse)(nil),  // 4: Service.QueryResponse
-	(*ServerResponse)(nil), // 5: Service.ServerResponse
+	(*Empty)(nil),          // 0: Service.Empty
+	(*BidRequest)(nil),     // 1: Service.BidRequest
+	(*Ack)(nil),            // 2: Service.Ack
+	(*ResultResponse)(nil), // 3: Service.ResultResponse
 }
 var file_Service_Auction_proto_depIdxs = []int32{
-	0, // 0: Service.ClientRequest.bid:type_name -> Service.BidRequest
-	1, // 1: Service.ClientRequest.query:type_name -> Service.QueryRequest
-	3, // 2: Service.ServerResponse.bid:type_name -> Service.BidResponse
-	4, // 3: Service.ServerResponse.query:type_name -> Service.QueryResponse
-	2, // 4: Service.AuctionService.AuctionService:input_type -> Service.ClientRequest
-	5, // 5: Service.AuctionService.AuctionService:output_type -> Service.ServerResponse
-	5, // [5:6] is the sub-list for method output_type
-	4, // [4:5] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	1, // 0: Service.AuctionService.Bid:input_type -> Service.BidRequest
+	0, // 1: Service.AuctionService.Result:input_type -> Service.Empty
+	2, // 2: Service.AuctionService.Bid:output_type -> Service.Ack
+	3, // 3: Service.AuctionService.Result:output_type -> Service.ResultResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_Service_Auction_proto_init() }
@@ -509,7 +270,7 @@ func file_Service_Auction_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_Service_Auction_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BidRequest); i {
+			switch v := v.(*Empty); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -521,7 +282,7 @@ func file_Service_Auction_proto_init() {
 			}
 		}
 		file_Service_Auction_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryRequest); i {
+			switch v := v.(*BidRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -533,7 +294,7 @@ func file_Service_Auction_proto_init() {
 			}
 		}
 		file_Service_Auction_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ClientRequest); i {
+			switch v := v.(*Ack); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -545,7 +306,7 @@ func file_Service_Auction_proto_init() {
 			}
 		}
 		file_Service_Auction_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BidResponse); i {
+			switch v := v.(*ResultResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -556,38 +317,6 @@ func file_Service_Auction_proto_init() {
 				return nil
 			}
 		}
-		file_Service_Auction_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_Service_Auction_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ServerResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-	}
-	file_Service_Auction_proto_msgTypes[2].OneofWrappers = []interface{}{
-		(*ClientRequest_Bid)(nil),
-		(*ClientRequest_Query)(nil),
-	}
-	file_Service_Auction_proto_msgTypes[5].OneofWrappers = []interface{}{
-		(*ServerResponse_Bid)(nil),
-		(*ServerResponse_Query)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -595,7 +324,7 @@ func file_Service_Auction_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_Service_Auction_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
