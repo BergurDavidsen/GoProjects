@@ -1,0 +1,55 @@
+2024/11/25 22:37:17 Server @5001 disconnected
+2024/11/25 22:37:45 Server listening @5001
+2024/11/25 22:37:46 Server listening @5002
+2024/11/25 22:38:00 batman is placing bid: 20
+2024/11/25 22:38:00 Server port @5001: Bid received: 20 from batman
+2024/11/25 22:38:00 Server port @5001: Auction started
+2024/11/25 22:38:00 Server port @5002: Bid received: 20 from batman
+2024/11/25 22:38:00 Server port @5002: Auction started
+2024/11/25 22:38:00 Client batman: Success
+2024/11/25 22:38:00 Client batman: Success
+2024/11/25 22:38:04 superman is placing bid: 20
+2024/11/25 22:38:04 Server port @5001: Bid received: 20 from superman
+2024/11/25 22:38:04 Server port @5002: Bid received: 20 from superman
+2024/11/25 22:38:04 Client superman: Fail
+2024/11/25 22:38:04 Client superman: Fail
+2024/11/25 22:38:07 Querying auction result...
+2024/11/25 22:38:07 Client superman: 🔨 Auction is still running. Current highest bid is 20 was from batman
+2024/11/25 22:38:07 Client superman: 🔨 Auction is still running. Current highest bid is 20 was from batman
+2024/11/25 22:38:12 superman is placing bid: 40
+2024/11/25 22:38:12 Server port @5001: Bid received: 40 from superman
+2024/11/25 22:38:12 Server port @5002: Bid received: 40 from superman
+2024/11/25 22:38:12 Client superman: Success
+2024/11/25 22:38:12 Client superman: Success
+2024/11/25 22:38:20 Server port @5001: Auction has ended
+2024/11/25 22:38:20 Server port @5001: Changing items
+2024/11/25 22:38:20 Server port @5002: Auction has ended
+2024/11/25 22:38:20 Server port @5002: Changing items
+2024/11/25 22:38:21 Querying auction result...
+2024/11/25 22:38:21 Client batman: 🔨 Auction is over. Winning bid was 40 and was from superman
+2024/11/25 22:38:21 Client batman: 🔨 Auction is over. Winning bid was 40 and was from superman
+2024/11/25 22:38:30 Server port @5001: Items changed
+2024/11/25 22:38:30 Server port @5002: Items changed
+2024/11/25 22:39:02 batman is placing bid: 50
+2024/11/25 22:39:02 Server port @5001: Bid received: 50 from batman
+2024/11/25 22:39:02 Server port @5001: Auction started
+2024/11/25 22:39:02 Server port @5002: Bid received: 50 from batman
+2024/11/25 22:39:02 Server port @5002: Auction started
+2024/11/25 22:39:02 Client batman: Success
+2024/11/25 22:39:02 Client batman: Success
+2024/11/25 22:39:04 Server @5002 disconnected
+2024/11/25 22:39:07 Querying auction result...
+2024/11/25 22:39:07 Client superman: 🔨 Auction is still running. Current highest bid is 50 was from batman
+2024/11/25 22:39:13 superman is placing bid: 60
+2024/11/25 22:39:13 Server port @5001: Bid received: 60 from superman
+2024/11/25 22:39:13 Client superman: Success
+2024/11/25 22:39:18 Querying auction result...
+2024/11/25 22:39:18 Client batman: 🔨 Auction is still running. Current highest bid is 60 was from superman
+2024/11/25 22:39:22 Server port @5001: Auction has ended
+2024/11/25 22:39:22 Server port @5001: Changing items
+2024/11/25 22:39:23 batman is placing bid: 100000
+2024/11/25 22:39:23 Client batman: Exception: changing items
+2024/11/25 22:39:29 Querying auction result...
+2024/11/25 22:39:29 Client batman: 🔨 Auction is over. Winning bid was 60 and was from superman
+2024/11/25 22:39:32 Server port @5001: Items changed
+2024/11/25 22:39:34 Server @5001 disconnected
