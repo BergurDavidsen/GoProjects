@@ -96,7 +96,9 @@ func bid(amount int, c *ClientHandle) {
 		}
 		outputArray = append(outputArray, ack.Ack)
 	}
-	log.Println(outputArray[0])
+	for _, output := range outputArray {
+		log.Println(output)
+	}
 
 }
 
@@ -105,6 +107,7 @@ func getResult(client *ClientHandle) {
 		result, err := conn.Result(context.Background(), &Service.Empty{})
 		if err != nil {
 			log.Printf("Error :: %s", err)
+			continue
 		}
 		if result.IsOver {
 			log.Printf("🔨 Auction is over. Winning bid was %d and was from %s\n", result.HighestBid, result.HighestBidder)
@@ -120,7 +123,7 @@ func main() {
 	}
 
 	client := ClientHandle{}
-	name:=os.Args[1]
+	name := os.Args[1]
 	ports := os.Args[2:]
 
 	client.name = name

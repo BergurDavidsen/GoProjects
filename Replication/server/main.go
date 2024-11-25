@@ -14,49 +14,45 @@ import (
 
 type AuctionServer struct {
 	Service.UnimplementedAuctionServiceServer
-	clients          map[Service.AuctionServiceServer]bool
-	mu               sync.Mutex
-    highestBid int32
-	auctionOver bool
-	startTime time.Time
-	duration time.Duration
-	isStarted bool
-	currentWinner string
+	clients         map[Service.AuctionServiceServer]bool
+	mu              sync.Mutex
+	highestBid      int32
+	auctionOver     bool
+	startTime       time.Time
+	duration        time.Duration
+	isStarted       bool
+	currentWinner   string
 	isChangingItems bool
 }
 
-
 func (as *AuctionServer) StartAuction() {
 	as.startTime = time.Now()
-    as.isStarted = true
+	as.isStarted = true
+	as.auctionOver = false
+	as.highestBid = 0
 	as.duration = 20 * time.Second
 
 	log.Println("Auction started")
 
-	<- time.NewTimer(as.duration).C
-	
+	<-time.NewTimer(as.duration).C
+
 	as.auctionOver = true
-    as.isStarted = false
-    log.Println("Auction has ended")
-	
+	as.isStarted = false
+	log.Println("Auction has ended")
+
 	go as.ChangeAuctionItems()
-	
+
 }
-
-
 
 func (as *AuctionServer) ChangeAuctionItems() {
 	as.isChangingItems = true
 	as.auctionOver = true
-	as.highestBid = 0
-	
-	
+
 	log.Println("Changing items")
-	<- time.NewTimer(10*time.Second).C
+	<-time.NewTimer(10 * time.Second).C
 	log.Println("Items changed")
 
 	as.isChangingItems = false
-	as.auctionOver = false
 }
 
 func (as *AuctionServer) Bid(ctx context.Context, in *Service.BidRequest) (*Service.Ack, error) {
@@ -68,7 +64,7 @@ func (as *AuctionServer) Bid(ctx context.Context, in *Service.BidRequest) (*Serv
 	if !as.isStarted {
 		go as.StartAuction()
 	}
-	
+
 	log.Printf("Bid received on: %d\n", in.Amount)
 
 	if as.auctionOver {
@@ -81,7 +77,7 @@ func (as *AuctionServer) Bid(ctx context.Context, in *Service.BidRequest) (*Serv
 		} else {
 			return &Service.Ack{Ack: "Fail"}, nil
 		}
-    }	
+	}
 }
 
 func (as *AuctionServer) Result(ctx context.Context, in *Service.Empty) (*Service.ResultResponse, error) {
@@ -93,11 +89,11 @@ func (as *AuctionServer) Result(ctx context.Context, in *Service.Empty) (*Servic
 
 func (as *AuctionServer) Start() {
 	// Start the server
-	if(len(os.Args) != 2) {
+	if len(os.Args) != 2 {
 		log.Fatalf("Please provide the port number")
 	}
 	port := os.Args[1]
-	listener, err := net.Listen("tcp", ":" + port)
+	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("Could not listen @ %v :: %v", port, err)
 	}
@@ -105,8 +101,7 @@ func (as *AuctionServer) Start() {
 
 	grpcServer := grpc.NewServer()
 	auctionServer := AuctionServer{
-		clients:          make(map[Service.AuctionServiceServer]bool),
-		
+		clients: make(map[Service.AuctionServiceServer]bool),
 	}
 
 	Service.RegisterAuctionServiceServer(grpcServer, &auctionServer)
@@ -118,9 +113,9 @@ func (as *AuctionServer) Start() {
 
 func main() {
 	server := AuctionServer{
-		highestBid: 0,
+		highestBid:  0,
 		auctionOver: false,
-		clients: make(map[Service.AuctionServiceServer]bool),
+		clients:     make(map[Service.AuctionServiceServer]bool),
 	}
 
 	server.Start()
