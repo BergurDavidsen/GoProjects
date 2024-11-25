@@ -21,6 +21,20 @@ type ClientHandle struct {
 	name string                         // Name of the client (bidder)
 }
 
+var logger *log.Logger // Global logger instance
+
+func init() {
+	// Initialize the logger to write to log.txt
+	file, err := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %v", err)
+		os.Exit(1)
+	}
+
+	// Create a new logger instance
+	logger = log.New(file, "", log.LstdFlags)
+}
+
 // reader handles user input and executes the corresponding auction commands.
 // Commands:
 //   - `bid <price>`: Places a bid of the specified amount.
@@ -67,12 +81,15 @@ help: // Label for displaying the help message when an invalid command is entere
 				log.Println("Invalid price. Please enter a numeric value.")
 				continue
 			}
-
+			logger.Printf("%s is placing bid: %d\n", client.name, price)
+			log.Println("Placing bid...")
 			// Place the bid
 			bid(price, client)
 
 		case "result":
 			// Handle the "result" command
+			logger.Println("Querying auction result...")
+			log.Println("Querying auction result...")
 			getResult(client)
 
 		default:
@@ -108,27 +125,32 @@ func bid(amount int, c *ClientHandle) {
 
 	// Log the acknowledgment from the first server that responds
 	if len(outputArray) > 0 {
-		log.Println(outputArray[0])
+		for _, output := range outputArray {
+			logger.Printf("Client %v: %v\n", c.name, output)
+			log.Printf("Client %v: %v\n", c.name, output)
+		}
 	} else {
-		log.Println("No acknowledgment received from servers.")
+		logger.Printf("Client %v: No acknowledgment received from servers.", c.name)
+		log.Printf("Client %v: No acknowledgment received from servers.", c.name)
 	}
 }
 
 // getResult queries the current auction status from all connected servers.
 // The status includes whether the auction is over and the current highest bid.
-func getResult(client *ClientHandle) {
-	for _, conn := range client.conn {
+func getResult(c *ClientHandle) {
+	for _, conn := range c.conn {
 		result, err := conn.Result(context.Background(), &Service.Empty{})
 		if err != nil {
-			log.Printf("Error :: %s", err)
 			continue
 		}
 
 		// Log the auction status
 		if result.IsOver {
-			log.Printf("🔨 Auction is over. Winning bid was %d and was from %s\n", result.HighestBid, result.HighestBidder)
+			logger.Printf("Client %v: 🔨 Auction is over. Winning bid was %d and was from %s\n", c.name, result.HighestBid, result.HighestBidder)
+			log.Printf("Client %v: 🔨 Auction is over. Winning bid was %d and was from %s\n", c.name, result.HighestBid, result.HighestBidder)
 		} else {
-			log.Printf("🔨 Auction is still running. Current highest bid is %d was from %s\n", result.HighestBid, result.HighestBidder)
+			logger.Printf("Client %v: 🔨 Auction is still running. Current highest bid is %d was from %s\n", c.name, result.HighestBid, result.HighestBidder)
+			log.Printf("Client %v: 🔨 Auction is still running. Current highest bid is %d was from %s\n", c.name, result.HighestBid, result.HighestBidder)
 		}
 	}
 }
@@ -137,11 +159,13 @@ func main() {
 	// Ensure correct usage with required arguments
 	if len(os.Args) < 3 {
 		log.Fatalf("Usage: %s <name> <list-server-ports>", os.Args[0:]) // Display usage and exit
+		os.Exit(1)
 	}
 
 	// Create a new client handle
 	client := ClientHandle{}
-	name := os.Args[1]  // Client's name
+
+	name := os.Args[1]   // Client's name
 	ports := os.Args[2:] // List of server ports
 
 	client.name = name
@@ -155,7 +179,8 @@ func main() {
 		)
 
 		if err != nil {
-			log.Fatalf("Error to make connection :: %s", err) // Exit on connection failure
+			logger.Fatalf("Error to make connection :: %s", err) // Exit on connection failure
+			os.Exit(1)
 		}
 
 		// Add the connection to the client's list
