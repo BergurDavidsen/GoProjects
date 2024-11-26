@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package Raft;
+
+option go_package = "./Service";
+
+service AuctionService {
+    rpc Broadcast(Status) returns (Ack);
+    rpc SendVote(Vote) returns (Ack);
+}
+
+message Empty { }
+
+message Vote {
+    int32 CandidateId = 1;
+    bool isLeader = 2;
+}
+
+message Status {
+    int32 Id = 2;
+}
+
+message Ack {
+    int32 id = 1;
+}
