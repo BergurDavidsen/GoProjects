@@ -186,7 +186,7 @@ func main() {
 		// Add the connection to the client's list
 		client.conn = append(client.conn, Service.NewAuctionServiceClient(conn))
 	}
-
+	
 	// Start reading commands from the user
 	reader(&client)
 }

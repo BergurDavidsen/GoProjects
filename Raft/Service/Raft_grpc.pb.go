@@ -27,7 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuctionServiceClient interface {
-	Broadcast(ctx context.Context, in *Status, opts ...grpc.CallOption) (*Ack, error)
+	Broadcast(ctx context.Context, in *Status, opts ...grpc.CallOption) (*Log, error)
 	SendVote(ctx context.Context, in *Vote, opts ...grpc.CallOption) (*Ack, error)
 }
 
@@ -39,9 +39,9 @@ func NewAuctionServiceClient(cc grpc.ClientConnInterface) AuctionServiceClient {
 	return &auctionServiceClient{cc}
 }
 
-func (c *auctionServiceClient) Broadcast(ctx context.Context, in *Status, opts ...grpc.CallOption) (*Ack, error) {
+func (c *auctionServiceClient) Broadcast(ctx context.Context, in *Status, opts ...grpc.CallOption) (*Log, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Ack)
+	out := new(Log)
 	err := c.cc.Invoke(ctx, AuctionService_Broadcast_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (c *auctionServiceClient) SendVote(ctx context.Context, in *Vote, opts ...g
 // All implementations must embed UnimplementedAuctionServiceServer
 // for forward compatibility.
 type AuctionServiceServer interface {
-	Broadcast(context.Context, *Status) (*Ack, error)
+	Broadcast(context.Context, *Status) (*Log, error)
 	SendVote(context.Context, *Vote) (*Ack, error)
 	mustEmbedUnimplementedAuctionServiceServer()
 }
@@ -75,7 +75,7 @@ type AuctionServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuctionServiceServer struct{}
 
-func (UnimplementedAuctionServiceServer) Broadcast(context.Context, *Status) (*Ack, error) {
+func (UnimplementedAuctionServiceServer) Broadcast(context.Context, *Status) (*Log, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Broadcast not implemented")
 }
 func (UnimplementedAuctionServiceServer) SendVote(context.Context, *Vote) (*Ack, error) {

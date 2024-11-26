@@ -5,7 +5,7 @@ package Raft;
 option go_package = "./Service";
 
 service AuctionService {
-    rpc Broadcast(Status) returns (Ack);
+    rpc Broadcast(Status) returns (Log);
     rpc SendVote(Vote) returns (Ack);
 }
 
@@ -22,4 +22,13 @@ message Status {
 
 message Ack {
     int32 id = 1;
+}
+
+message Chunk {
+    string log = 1;
+}
+
+message Log {
+    int32 amount = 1;
+    repeated Chunk chunk = 2;
 }
